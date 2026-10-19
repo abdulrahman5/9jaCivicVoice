@@ -1,0 +1,85 @@
+name: Preview database
+
+# Sets up the Supabase project behind Vercel preview deployments:
+# applies migrations, loads the fake demo data on first run, and creates or
+# refreshes the demo moderator. Safe to re-run. See docs/PREVIEW.md.
+#
+# This repo is public, so these logs are public: no step may print a secret.
+
+# Run it from the Actions tab after creating the preview project, and again
+# whenever new migrations are merged.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: preview-db
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    environment: preview
+    env:
+      DB_URL: ${{ secrets.PREVIEW_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check configuration
+        env:
+          SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.PREVIEW_SERVICE_ROLE_KEY }}
+          STAFF_EMAIL: ${{ vars.DEMO_STAFF_EMAIL }}
+          STAFF_PASSWORD: ${{ secrets.DEMO_STAFF_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "$DB_URL" ] || missing="$missing PREVIEW_DB_URL(secret)"
+          [ -n "$SUPABASE_URL" ] || missing="$missing PREVIEW_SUPABASE_URL(variable)"
+          [ -n "$SERVICE_KEY" ] || missing="$missing PREVIEW_SERVICE_ROLE_KEY(secret)"
+          [ -n "$STAFF_EMAIL" ] || missing="$missing DEMO_STAFF_EMAIL(variable)"
+          [ -n "$STAFF_PASSWORD" ] || missing="$missing DEMO_STAFF_PASSWORD(secret)"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing in the 'preview' environment:$missing. See docs/PREVIEW.md."
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+
+      - name: Apply migrations
+        run: supabase db push --workdir db/civic --db-url "$DB_URL" --yes
+
+      - name: Load sample boundaries and agencies (first run only)
+        run: |
+          if [ "$(psql "$DB_URL" -tAc 'select count(*) from core.lgas')" = "0" ]; then
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f db/civic/supabase/seed.sql
+            echo "Loaded seed.sql"
+          else
+            echo "Boundaries already present, skipped"
+          fi
+
+      - name: Load demo reports (first run only)
+        run: |
+          if [ "$(psql "$DB_URL" -tAc 'select count(*) from core.issues')" = "0" ]; then
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f db/civic/supabase/demo.sql
+            echo "Loaded demo.sql"
+          else
+            echo "Reports already present, skipped"
+          fi
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @civicvoice/web...
+
+      - name: Create or refresh the demo moderator
+        env:
+          SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PREVIEW_SERVICE_ROLE_KEY }}
+          STAFF_PASSWORD: ${{ secrets.DEMO_STAFF_PASSWORD }}
+        run: pnpm --filter @civicvoice/web staff:create "${{ vars.DEMO_STAFF_EMAIL }}" "Demo Moderator" moderator

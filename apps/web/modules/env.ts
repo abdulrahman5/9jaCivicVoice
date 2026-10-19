@@ -25,8 +25,7 @@ const groups = {
   jobs: z.object({
     JOBS_SECRET: z.string().min(32),
   }),
-  app: z.object({
-    NEXT_PUBLIC_SITE_URL: z.url(),
+  police: z.object({
     NEXT_PUBLIC_POLICE_FORM_URL: z.url(),
   }),
 } as const;
@@ -44,6 +43,19 @@ export function env<G extends keyof Groups>(group: G): z.infer<Groups[G]> {
     cache.set(group, parsed.data);
   }
   return cache.get(group) as z.infer<Groups[G]>;
+}
+
+/**
+ * The site's public origin, for links we send out (agency links). Explicit
+ * NEXT_PUBLIC_SITE_URL wins; on Vercel preview deployments, which each get
+ * their own address, it falls back to that deployment's URL.
+ */
+export function siteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return z.url().parse(explicit).replace(/\/$/, "");
+  const vercel = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+  if (vercel) return `https://${vercel}`;
+  throw new Error("Set NEXT_PUBLIC_SITE_URL");
 }
 
 /** True when the given feature is configured; used to render friendly empty states in development. */

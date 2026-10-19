@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TAXONOMY, type Category, type City } from "@civicvoice/validation";
+import { Turnstile, turnstileSiteKey } from "@/components/Turnstile";
 import { rememberReport } from "@/modules/my-reports";
 
 const CATEGORY_LABELS: Record<Category, { title: string; hint: string }> = {
@@ -39,6 +40,10 @@ export function ReportFlow({ initialCategory }: { initialCategory?: Category }) 
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
+  // Bot protection: a Turnstile token is required when a site key is configured.
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
+  const needsToken = Boolean(turnstileSiteKey);
 
   useEffect(() => {
     try {
@@ -76,23 +81,33 @@ export function ReportFlow({ initialCategory }: { initialCategory?: Category }) 
 
   async function submit() {
     if (!category || !subcategory || !location) return;
+    if (needsToken && !turnstileToken) return;
     setSubmitting(true);
     setError(undefined);
-    const res = await fetch("/api/reports", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        city,
-        category,
-        subcategory,
-        location,
-        description,
-        phone: phone || undefined,
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          city,
+          category,
+          subcategory,
+          location,
+          description,
+          phone: phone || undefined,
+          turnstileToken: turnstileToken ?? undefined,
+        }),
+      });
+    } catch {
+      setSubmitting(false);
+      return setError("No connection. Your draft is saved; try again when you're back online.");
+    }
     setSubmitting(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
+      // A Turnstile token is single-use: get a fresh one before the retry.
+      setTurnstileReset((n) => n + 1);
       return setError(data.error ?? "Something went wrong. Your draft is saved; try again.");
     }
     const { ref, trackingToken } = (await res.json()) as { ref: string; trackingToken: string };
@@ -176,16 +191,23 @@ export function ReportFlow({ initialCategory }: { initialCategory?: Category }) 
                 )}
               </div>
             ))}
-            <a
-              href={process.env.NEXT_PUBLIC_POLICE_FORM_URL ?? "#"}
-              className="flex items-center justify-between rounded-card border border-police bg-surface p-3.5 text-ink no-underline"
-            >
-              <span className="flex flex-col">
+            {process.env.NEXT_PUBLIC_POLICE_FORM_URL ? (
+              <a
+                href={process.env.NEXT_PUBLIC_POLICE_FORM_URL}
+                className="flex items-center justify-between rounded-card border border-police bg-surface p-3.5 text-ink no-underline"
+              >
+                <span className="flex flex-col">
+                  <span className="text-[15px] font-semibold">Police conduct</span>
+                  <span className="text-[13px] text-muted">Extortion, harassment, unlawful arrest</span>
+                </span>
+                <span className="rounded-full bg-police px-2 py-0.5 text-[11px] font-bold text-white">Protected</span>
+              </a>
+            ) : (
+              <div className="flex items-center justify-between rounded-card border border-line bg-surface p-3.5 text-muted">
                 <span className="text-[15px] font-semibold">Police conduct</span>
-                <span className="text-[13px] text-muted">Extortion, harassment, unlawful arrest</span>
-              </span>
-              <span className="rounded-full bg-police px-2 py-0.5 text-[11px] font-bold text-white">Protected</span>
-            </a>
+                <span className="text-[13px]">Coming soon</span>
+              </div>
+            )}
           </>
         )}
 
@@ -255,6 +277,11 @@ export function ReportFlow({ initialCategory }: { initialCategory?: Category }) 
             <p className="text-xs text-muted">
               Your report is anonymous. Photo location data is removed and your phone number is never published.
             </p>
+            <Turnstile
+              resetKey={turnstileReset}
+              onToken={setTurnstileToken}
+              onError={() => setError("We couldn't confirm you're a person. Check your connection and reload the page.")}
+            />
           </>
         )}
 
@@ -289,11 +316,11 @@ export function ReportFlow({ initialCategory }: { initialCategory?: Category }) 
         {step === 3 && (
           <button
             type="button"
-            disabled={submitting}
+            disabled={submitting || (needsToken && !turnstileToken)}
             onClick={submit}
             className="h-13 w-full rounded-card bg-accent font-semibold text-white disabled:opacity-40"
           >
-            {submitting ? "Submitting…" : "Submit report"}
+            {submitting ? "Submitting…" : needsToken && !turnstileToken ? "Checking you're not a bot…" : "Submit report"}
           </button>
         )}
       </footer>

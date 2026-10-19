@@ -68,12 +68,19 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 {CATEGORY_LABELS[c]}
               </Link>
             ))}
-            <Link
-              href={process.env.NEXT_PUBLIC_POLICE_FORM_URL ?? "#"}
-              className="flex min-h-16 items-center justify-center rounded-card border border-police bg-surface p-3 text-center text-[13px] text-police no-underline"
-            >
-              Police conduct
-            </Link>
+            {process.env.NEXT_PUBLIC_POLICE_FORM_URL ? (
+              <a
+                href={process.env.NEXT_PUBLIC_POLICE_FORM_URL}
+                className="flex min-h-16 items-center justify-center rounded-card border border-police bg-surface p-3 text-center text-[13px] text-police no-underline"
+              >
+                Police conduct
+              </a>
+            ) : (
+              <span className="flex min-h-16 flex-col items-center justify-center rounded-card border border-line bg-surface p-3 text-center text-[13px] text-muted">
+                Police conduct
+                <span className="text-[11px]">Coming soon</span>
+              </span>
+            )}
           </div>
         </section>
 
