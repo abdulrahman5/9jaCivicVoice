@@ -64,7 +64,7 @@ export const FORM_HTML = `<!doctype html>
 </html>`;
 
 export const FORM_CSS = `:root{--ink:#1a1a1a;--muted:#5c5c5c;--line:#d9d9d4;--police:#3a1f4a;--police-soft:#efe6f4}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#fafaf7;color:var(--ink)}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;font-family:system-ui,sans-serif;background:#fafaf7;color:var(--ink)}
 header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px}
 .exit{background:var(--ink);color:#fff;padding:10px 14px;border-radius:20px;text-decoration:none;font-weight:700;font-size:14px}
 main{max-width:480px;margin:0 auto;padding:0 20px 40px}

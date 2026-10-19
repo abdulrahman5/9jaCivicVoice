@@ -18,21 +18,25 @@
   --radius-card: var(--cv-radius);
 }
 
-html {
-  background: var(--cv-ground);
-  color: var(--cv-ink);
-  font-family: var(--cv-font);
-  -webkit-text-size-adjust: 100%;
-}
+/* Base styles live in the base layer so utility classes (text-white, text-ink...)
+   can override them. Unlayered rules would beat every Tailwind utility. */
+@layer base {
+  html {
+    background: var(--cv-ground);
+    color: var(--cv-ink);
+    font-family: var(--cv-font);
+    -webkit-text-size-adjust: 100%;
+  }
 
-a {
-  color: var(--cv-accent);
-}
-a:hover {
-  color: var(--cv-accent-strong);
-}
+  a {
+    color: var(--cv-accent);
+  }
+  a:hover {
+    color: var(--cv-accent-strong);
+  }
 
-:focus-visible {
-  outline: 3px solid var(--cv-accent);
-  outline-offset: 2px;
+  :focus-visible {
+    outline: 3px solid var(--cv-accent);
+    outline-offset: 2px;
+  }
 }

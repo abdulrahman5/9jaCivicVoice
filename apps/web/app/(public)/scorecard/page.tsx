@@ -7,6 +7,7 @@ export const metadata: Metadata = { title: "Scorecard" };
 export const revalidate = 300;
 
 const pct = (v: number | null) => (v === null ? "—" : `${Math.round(v)}%`);
+const days = (v: number | null) => (v === null ? "—" : v < 1 ? "< 1" : String(Math.round(v)));
 
 /** Public responsiveness scorecard (wireframe 3.3, PRD F8). */
 export default async function ScorecardPage({ searchParams }: { searchParams: Promise<{ city?: string }> }) {
@@ -50,7 +51,7 @@ export default async function ScorecardPage({ searchParams }: { searchParams: Pr
                   <td className="p-3 font-semibold">{r.agency_name}</td>
                   <td className="p-3">{r.reports}</td>
                   <td className="p-3">{pct(r.ack_within_7d_pct)}</td>
-                  <td className="p-3">{r.median_days_to_resolve ?? "—"}</td>
+                  <td className="p-3">{days(r.median_days_to_resolve)}</td>
                   <td className="p-3">{pct(r.confirmed_pct)}</td>
                 </tr>
               ))
