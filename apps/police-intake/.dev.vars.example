@@ -1,0 +1,4 @@
+# Copy to .dev.vars for `pnpm dev:police`. Never commit .dev.vars.
+VAULT_SUPABASE_ANON_KEY=
+OFFICER_DETAILS_PUBLIC_KEY=
+STATUS_CODE_PEPPER=

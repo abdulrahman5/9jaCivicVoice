@@ -1,0 +1,1 @@
+-- The police vault has no seed data. Never load real or realistic police reports locally.

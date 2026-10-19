@@ -1,0 +1,31 @@
+export const en = {
+  "app.name": "CivicVoice",
+  "home.reportCta": "Report an issue",
+  "home.reportCtaSub": "About 60 seconds · you can stay anonymous",
+  "home.nearYou": "Issues near you",
+  "report.step": "Step {step} of {total}",
+  "report.whatAbout": "What's the issue about?",
+  "report.anonymous": "Report anonymously",
+  "report.anonymousHelp": "Your name and phone are never shown publicly. Photo location data is removed.",
+  "report.submit": "Review & submit",
+  "track.isItFixed": "Is it fixed?",
+  "track.yesFixed": "Yes, it's fixed",
+  "track.notYet": "Not yet",
+  "bot.welcome":
+    "Welcome to CivicVoice. Reply with a number:\n1 · Report an issue\n2 · Track a report\n3 · Change language",
+  "bot.askCategory": "What is it about?\n1 · Roads\n2 · Electricity\n3 · Water\n4 · Health\n5 · Public service\n6 · Police conduct",
+  "bot.askLocation": "Share your location (Attach › Location), or type your street and area.",
+  "bot.askCity": "Which city is this in?\n1 · Lagos\n2 · FCT Abuja",
+  "bot.outsidePilot":
+    "Sorry, CivicVoice only covers Lagos and FCT Abuja for now. Share a location there, or reply menu.",
+  "bot.askDetails": "Tell us what happened. Send a photo, a voice note, or type it.",
+  "bot.received": "Thank you. Your report number is {ref}.\nWe'll message you here when it moves. Reply 2 at any time to check status.",
+  "bot.askRef": "Send your report number, for example LAG-0820.",
+  "bot.policeRedirect":
+    "For your safety, police reports are not taken on WhatsApp. Use our protected form, which keeps no phone number: {url}",
+  "bot.didNotUnderstand": "Sorry, I didn't get that. Reply with one of the numbers shown.",
+  "bot.chooseLanguage": "Choose a language:\n1 · English\n2 · Pidgin",
+  "bot.languageSet": "Language updated.",
+  "bot.status": "{ref}: {status}.{note}",
+  "bot.notFound": "We couldn't find report {ref}. Check the number and try again.",
+} as const;

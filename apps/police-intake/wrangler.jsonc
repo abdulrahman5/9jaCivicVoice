@@ -1,0 +1,23 @@
+// Police intake Worker. Part of the police vault trust zone (architecture doc, D2).
+// Logging, tracing and analytics are switched OFF on purpose: do not enable them.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "civicvoice-police-intake",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "observability": { "enabled": false, "logs": { "enabled": false } },
+  "logpush": false,
+  "upload_source_maps": false,
+  "vars": {
+    "VAULT_SUPABASE_URL": "http://127.0.0.1:55321",
+    "PUBLIC_SITE_URL": "http://localhost:3000"
+  }
+  // Secrets (set with `wrangler secret put`, or .dev.vars locally):
+  //   VAULT_SUPABASE_ANON_KEY     anon key of the vault project (can only call police.submit_report)
+  //   OFFICER_DETAILS_PUBLIC_KEY  RSA-OAEP public key (base64 SPKI) for encrypting officer details
+  //   STATUS_CODE_PEPPER          extra secret mixed into status-code hashes
+  //
+  // Rate limiting is a Cloudflare WAF rule on the route (configured in the dashboard),
+  // so this code never needs to read the visitor's IP address.
+}

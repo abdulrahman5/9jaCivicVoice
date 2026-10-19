@@ -1,0 +1,40 @@
+name: Nightly civic backup
+
+# Own copy of the civic database on top of Supabase's daily backups
+# (architecture doc, "Backups"). The police vault is deliberately NOT exported here.
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 01:00 WAT
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: backups
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      - name: Install age
+        run: sudo apt-get update && sudo apt-get install -y age
+      - name: Dump, encrypt, upload
+        env:
+          CIVIC_DB_URL: ${{ secrets.CIVIC_DB_URL }}
+          AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ vars.R2_ENDPOINT }}
+          R2_BUCKET: ${{ vars.R2_BACKUP_BUCKET }}
+        run: |
+          set -euo pipefail
+          FILE="civic-$(date -u +%Y-%m-%d).sql.age"
+          supabase db dump --db-url "$CIVIC_DB_URL" -f schema.sql
+          supabase db dump --db-url "$CIVIC_DB_URL" --data-only -f data.sql
+          cat schema.sql data.sql | age -r "$AGE_RECIPIENT" -o "$FILE"
+          rm schema.sql data.sql
+          aws s3 cp "$FILE" "s3://$R2_BUCKET/$FILE" --endpoint-url "$R2_ENDPOINT"
+          # Objects expire after 30 days via the bucket's lifecycle rule.

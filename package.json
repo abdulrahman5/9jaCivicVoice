@@ -1,0 +1,33 @@
+{
+  "name": "civicvoice",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@civicvoice/web",
+    "dev:police": "turbo run dev --filter=@civicvoice/police-intake",
+    "build": "turbo run build",
+    "lint": "eslint .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "check": "eslint . && turbo run typecheck test",
+    "db:civic:start": "supabase start --workdir db/civic",
+    "db:civic:stop": "supabase stop --workdir db/civic",
+    "db:civic:reset": "supabase db reset --workdir db/civic",
+    "db:vault:start": "supabase start --workdir db/vault",
+    "db:vault:stop": "supabase stop --workdir db/vault",
+    "db:vault:reset": "supabase db reset --workdir db/vault",
+    "db:types": "supabase gen types typescript --local --workdir db/civic --schema core,public_read,ops > packages/db/src/database.types.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "globals": "^16.5.0",
+    "supabase": "^2.121.0",
+    "turbo": "^2.11.9",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.2"
+  }
+}

@@ -1,0 +1,33 @@
+/*
+ * Design tokens from the CivicVoice NG wireframes. Shared by the web app and
+ * the police intake form, which can't load the web app's CSS bundle.
+ */
+:root {
+  --cv-ground: #fafaf7;
+  --cv-surface: #ffffff;
+  --cv-ink: #1a1a1a;
+  --cv-muted: #5c5c5c;
+  --cv-line: #d9d9d4;
+  --cv-fill: #efefea;
+
+  --cv-accent: #0f6b47;
+  --cv-accent-strong: #0a4f34;
+  --cv-accent-soft: #dff0e7;
+
+  --cv-police: #3a1f4a;
+  --cv-police-soft: #efe6f4;
+
+  /* Status pills: hue and lightness both differ, so they stay distinct for colour-blind users. */
+  --cv-status-received-bg: #ededed;
+  --cv-status-received-fg: #3d3d3d;
+  --cv-status-forwarded-bg: #e3ecf7;
+  --cv-status-forwarded-fg: #1d4e89;
+  --cv-status-ack-bg: #fbebd7;
+  --cv-status-ack-fg: #8a4b00;
+  --cv-status-resolved-bg: #dff0e7;
+  --cv-status-resolved-fg: #0f6b47;
+
+  --cv-radius: 12px;
+  --cv-font: "Public Sans", system-ui, sans-serif;
+  --cv-mono: "JetBrains Mono", ui-monospace, monospace;
+}
