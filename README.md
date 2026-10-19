@@ -87,6 +87,10 @@ Keep `officer.pem` offline. Anyone who has it can read officer details.
 4. **Updates:** every status change goes through `core.change_status()`, which checks the transition, writes the event and the audit log, and enqueues `notify_citizen`.
 5. **Scorecard:** `public_read.scorecard` is rebuilt nightly. The public site reads only the `public_read` schema, using the anon key.
 
+## Preview deployment
+
+To get a shareable test URL (Vercel + a Supabase preview project, with fake demo data, a preview build for every pull request), follow [docs/PREVIEW.md](docs/PREVIEW.md).
+
 ## Production setup (one time)
 
 See the architecture doc's production readiness checklist. In short:

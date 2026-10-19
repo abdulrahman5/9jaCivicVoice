@@ -80,7 +80,7 @@ function waDeps(): WaDeps {
       return { status: issue.status, note: last?.public_note ?? null };
     },
     send: sendText,
-    policeFormUrl: env("app").NEXT_PUBLIC_POLICE_FORM_URL,
+    policeFormUrl: env("police").NEXT_PUBLIC_POLICE_FORM_URL,
   };
 }
 

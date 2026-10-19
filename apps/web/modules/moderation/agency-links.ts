@@ -1,7 +1,7 @@
 import "server-only";
 import { civicServiceClient } from "@civicvoice/db";
 import { signAgencyToken } from "../agency-tokens";
-import { env } from "../env";
+import { env, siteUrl } from "../env";
 
 /**
  * Creates a signed, no-login response link for an agency and records its id so
@@ -20,5 +20,5 @@ export async function createAgencyLink(issueId: string, agencyId: string): Promi
       expires_at: new Date(payload.exp * 1000).toISOString(),
     });
   if (error) throw error;
-  return `${env("app").NEXT_PUBLIC_SITE_URL}/r/${token}`;
+  return `${siteUrl()}/r/${token}`;
 }

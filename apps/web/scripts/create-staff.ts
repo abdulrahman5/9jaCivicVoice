@@ -1,9 +1,11 @@
-// Creates a staff account (there is no public sign-up).
+// Creates (or refreshes) a staff account. There is no public sign-up.
 //
 //   pnpm --filter @civicvoice/web staff:create <email> "<display name>" <moderator|admin|police_moderator>
 //
-// Prints a one-time password. The person signs in at /login, then must set up
-// an authenticator app before they can open the console.
+// Without STAFF_PASSWORD, generates a one-time password and prints it once.
+// With STAFF_PASSWORD (used by the preview workflow), sets that password and
+// never prints it: workflow logs on a public repo are public.
+// Safe to re-run: an existing account is updated, not duplicated.
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
@@ -23,24 +25,56 @@ if (!url || !key) {
 }
 
 const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-const password = randomBytes(18).toString("base64url");
-
-const { data, error } = await supabase.auth.admin.createUser({ email, password, email_confirm: true });
-if (error || !data.user) {
-  console.error(`Could not create the user: ${error?.message}`);
+const providedPassword = process.env.STAFF_PASSWORD;
+if (providedPassword !== undefined && providedPassword.length < 12) {
+  console.error("STAFF_PASSWORD must be at least 12 characters.");
   process.exit(1);
+}
+const password = providedPassword || randomBytes(18).toString("base64url");
+
+async function findUserId(address: string): Promise<string | null> {
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
+    if (error) throw error;
+    const match = data.users.find((u) => u.email?.toLowerCase() === address.toLowerCase());
+    if (match) return match.id;
+    if (data.users.length < 100) return null;
+  }
+  return null;
+}
+
+let userId = await findUserId(email);
+let created = false;
+if (userId) {
+  const { error } = await supabase.auth.admin.updateUserById(userId, { password });
+  if (error) {
+    console.error(`Could not update the existing user: ${error.message}`);
+    process.exit(1);
+  }
+} else {
+  const { data, error } = await supabase.auth.admin.createUser({ email, password, email_confirm: true });
+  if (error || !data.user) {
+    console.error(`Could not create the user: ${error?.message}`);
+    process.exit(1);
+  }
+  userId = data.user.id;
+  created = true;
 }
 
 const { error: staffError } = await supabase
   .schema("ops")
   .from("staff")
-  .insert({ user_id: data.user.id, display_name: displayName, role });
+  .upsert({ user_id: userId, display_name: displayName, role, active: true });
 if (staffError) {
-  await supabase.auth.admin.deleteUser(data.user.id);
-  console.error(`Could not create the staff profile: ${staffError.message}`);
+  if (created) await supabase.auth.admin.deleteUser(userId);
+  console.error(`Could not save the staff profile: ${staffError.message}`);
   process.exit(1);
 }
 
-console.log(`Created ${role} ${displayName} <${email}>`);
-console.log(`One-time password: ${password}`);
-console.log("Share it privately. They'll set up an authenticator app at first sign-in.");
+console.log(`${created ? "Created" : "Updated"} ${role} ${displayName} <${email}>`);
+if (providedPassword) {
+  console.log("Password set from STAFF_PASSWORD (not shown).");
+} else {
+  console.log(`One-time password: ${password}`);
+  console.log("Share it privately. They'll set up an authenticator app at first sign-in.");
+}
