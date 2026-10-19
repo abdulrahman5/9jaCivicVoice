@@ -9,7 +9,16 @@ It takes about 20 minutes, all in web dashboards, with three free accounts: **Su
 ## 1. Supabase: create the preview database
 
 1. At [supabase.com/dashboard](https://supabase.com/dashboard), create a project called `civicvoice-preview`. Choose the region nearest Nigeria (e.g. London or Frankfurt). Save the database password somewhere safe.
-2. **Project Settings → Data API → Exposed schemas:** add `core`, `ops` and `public_read` (keep `public`), then save. Without this the app can't reach its tables.
+2. **Create and expose the app's schemas.** The "Exposed schemas" list only offers schemas that already exist, so create them first; the workflow fills them in later.
+   - **SQL Editor → New query**, paste and **Run**:
+     ```sql
+     create schema if not exists core;
+     create schema if not exists ops;
+     create schema if not exists public_read;
+     ```
+   - **Project Settings → Data API** (or **Integrations → Data API → Settings**) → **Exposed schemas**: tick `core`, `ops` and `public_read`, keep `public` and `graphql_public`, then **Save**. Refresh the page if the new schemas aren't listed.
+
+   Exposing a schema doesn't grant access: the migrations give the public (anon) key no permissions in `core` or `ops`, so only the server's service-role key can use them.
 3. **Authentication → Sign In / Providers:**
    - Turn **off** "Allow new users to sign up". Staff accounts are created by the workflow below.
    - Leave the **Email** provider **on**. Turning it off blocks staff sign-in.
@@ -83,6 +92,7 @@ It takes about 20 minutes, all in web dashboards, with three free accounts: **Su
 | Symptom | Fix |
 | --- | --- |
 | Pages show no issues; logs mention `Invalid schema` or `permission denied for schema core` | Step 1.2: expose `core`, `ops`, `public_read` |
+| Workflow fails at "Create or refresh the demo moderator" with `Invalid schema: ops` | Step 1.2 wasn't done before the run: expose the schemas, then re-run the workflow |
 | Workflow fails at "Apply migrations" with a network or timeout error | Use the **Session pooler** connection string, not the direct one |
 | Workflow fails at "Check configuration" | A secret or variable is missing from the `preview` **environment** (not repo-level) |
 | Staff sign-in says the email and password don't match | Re-run the workflow to reset the password; check the Email provider is on |
