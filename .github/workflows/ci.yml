@@ -44,6 +44,7 @@ jobs:
         run: |
           supabase start --workdir db/civic -x studio,imgproxy,realtime,edge-runtime,logflare,vector,supavisor,mailpit,postgres-meta
           supabase db lint --workdir db/civic --level error --schema core,ops,public_read
+          supabase test db --workdir db/civic
       - name: Police vault database
         run: |
           supabase start --workdir db/vault -x studio,imgproxy,realtime,edge-runtime,logflare,vector,supavisor,mailpit,postgres-meta

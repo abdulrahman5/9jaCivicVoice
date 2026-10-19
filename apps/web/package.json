@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "staff:create": "node --env-file-if-exists=.env.local scripts/create-staff.ts"
   },
   "dependencies": {
     "@civicvoice/db": "workspace:*",
