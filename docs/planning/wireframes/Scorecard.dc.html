@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Public responsiveness scorecard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F6B47}a:hover{color:#0A4F34}
+.ph{background:repeating-linear-gradient(45deg,#E4E4DE 0 8px,#EFEFEA 8px 16px)}
+</style>
+</helmet>
+<div style="min-height: 1080px; display: flex; flex-direction: column; background: #FAFAF7; color: #1A1A1A; font-family: 'Public Sans', system-ui, sans-serif">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 32px; background: #fff; border-bottom: 1px solid #D9D9D4">
+    <span style="font-size: 18px; font-weight: 700">CivicVoice</span>
+    <nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; font-size: 14px">
+      <a href="#" style="color: #1A1A1A; text-decoration: none">Issue map</a>
+      <a href="#" style="color: #1A1A1A; font-weight: 700; text-decoration: none; border-bottom: 2px solid #0F6B47; padding-bottom: 2px">Scorecard</a>
+      <a href="Wins.dc.html" style="color: #1A1A1A; text-decoration: none">Wins</a>
+      <a href="Police-Public.dc.html" style="color: #1A1A1A; text-decoration: none">Police conduct</a>
+      <a href="#" style="color: #1A1A1A; text-decoration: none">Open data</a>
+      <a href="#" style="color: #1A1A1A; text-decoration: none">About &amp; methodology</a>
+      <a href="Report-Category.dc.html" style="padding: 10px 16px; border-radius: 10px; background: #0F6B47; color: #fff; font-weight: 600; text-decoration: none">Report an issue</a>
+    </nav>
+  </header>
+
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1200px; margin: 0 auto; padding: 36px 32px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 8px; max-width: 640px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5C5C5C">PUBLIC SCORECARD · UPDATED DAILY</span>
+        <h1 style="margin: 0; font-size: 36px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em">How quickly do agencies in Lagos and Abuja respond to citizens?</h1>
+        <p style="margin: 0; font-size: 16px; color: #3D3D3D">Every number here comes from citizen reports, agency replies, and whether the reporter confirmed the fix.</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 14px">Lagos · FCT Abuja ▾</button>
+        <button style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 14px">Last 90 days ▾</button>
+        <button style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 14px">All categories ▾</button>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px">
+      <div style="padding: 18px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5C5C5C">Reports received</span><span style="font-size: 32px; font-weight: 700">[0,000]</span></div>
+      <div style="padding: 18px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5C5C5C">Acknowledged within 7 days</span><span style="font-size: 32px; font-weight: 700">[00]%</span></div>
+      <div style="padding: 18px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5C5C5C">Median days to resolution</span><span style="font-size: 32px; font-weight: 700">[00]</span></div>
+      <div style="padding: 18px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #5C5C5C">Fixes confirmed by citizens</span><span style="font-size: 32px; font-weight: 700">[00]%</span></div>
+    </div>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700">Agency league table</h2>
+        <a href="#" style="font-size: 14px; font-weight: 600">Download CSV</a>
+      </div>
+      <div style="overflow-x: auto; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff">
+        <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px">
+          <thead>
+            <tr style="text-align: left; color: #5C5C5C; font-size: 12px; border-bottom: 1px solid #D9D9D4">
+              <th style="padding: 12px 16px; font-weight: 600">#</th>
+              <th style="padding: 12px 16px; font-weight: 600">Agency</th>
+              <th style="padding: 12px 16px; font-weight: 600">Reports</th>
+              <th style="padding: 12px 16px; font-weight: 600; width: 28%">Acknowledged ≤ 7 days</th>
+              <th style="padding: 12px 16px; font-weight: 600">Median resolution</th>
+              <th style="padding: 12px 16px; font-weight: 600">Citizen-confirmed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #EDEDE8">
+              <td style="padding: 14px 16px; font-family: 'JetBrains Mono', monospace">1</td>
+              <td style="padding: 14px 16px; font-weight: 600">[State Water Corporation]</td>
+              <td style="padding: 14px 16px">[000]</td>
+              <td style="padding: 14px 16px"><div style="display: flex; align-items: center; gap: 10px"><div style="flex: 1; height: 8px; border-radius: 4px; background: #EDEDE8"><div style="width: 82%; height: 8px; border-radius: 4px; background: #0F6B47"></div></div><span style="width: 44px">[00]%</span></div></td>
+              <td style="padding: 14px 16px">[0] days</td>
+              <td style="padding: 14px 16px">[00]%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #EDEDE8">
+              <td style="padding: 14px 16px; font-family: 'JetBrains Mono', monospace">2</td>
+              <td style="padding: 14px 16px; font-weight: 600">[Electricity DisCo] · Ikeja</td>
+              <td style="padding: 14px 16px">[000]</td>
+              <td style="padding: 14px 16px"><div style="display: flex; align-items: center; gap: 10px"><div style="flex: 1; height: 8px; border-radius: 4px; background: #EDEDE8"><div style="width: 64%; height: 8px; border-radius: 4px; background: #0F6B47"></div></div><span style="width: 44px">[00]%</span></div></td>
+              <td style="padding: 14px 16px">[0] days</td>
+              <td style="padding: 14px 16px">[00]%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #EDEDE8">
+              <td style="padding: 14px 16px; font-family: 'JetBrains Mono', monospace">3</td>
+              <td style="padding: 14px 16px; font-weight: 600">[Primary Health Care Board]</td>
+              <td style="padding: 14px 16px">[000]</td>
+              <td style="padding: 14px 16px"><div style="display: flex; align-items: center; gap: 10px"><div style="flex: 1; height: 8px; border-radius: 4px; background: #EDEDE8"><div style="width: 41%; height: 8px; border-radius: 4px; background: #0F6B47"></div></div><span style="width: 44px">[00]%</span></div></td>
+              <td style="padding: 14px 16px">[00] days</td>
+              <td style="padding: 14px 16px">[00]%</td>
+            </tr>
+            <tr>
+              <td style="padding: 14px 16px; font-family: 'JetBrains Mono', monospace">4</td>
+              <td style="padding: 14px 16px; font-weight: 600">[State Ministry of Works]</td>
+              <td style="padding: 14px 16px">[000]</td>
+              <td style="padding: 14px 16px"><div style="display: flex; align-items: center; gap: 10px"><div style="flex: 1; height: 8px; border-radius: 4px; background: #EDEDE8"><div style="width: 18%; height: 8px; border-radius: 4px; background: #8A4B00"></div></div><span style="width: 44px">[00]%</span></div></td>
+              <td style="padding: 14px 16px">Not yet engaged</td>
+              <td style="padding: 14px 16px">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px">
+      <section style="flex: 1 1 340px; min-width: 0; padding: 20px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 700">What people report most</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px">
+          <div style="display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center"><span>Electricity</span><div style="height: 14px; width: 90%; border-radius: 3px; background: #1A1A1A"></div></div>
+          <div style="display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center"><span>Roads</span><div style="height: 14px; width: 72%; border-radius: 3px; background: #1A1A1A"></div></div>
+          <div style="display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center"><span>Water</span><div style="height: 14px; width: 48%; border-radius: 3px; background: #1A1A1A"></div></div>
+          <div style="display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center"><span>Health</span><div style="height: 14px; width: 30%; border-radius: 3px; background: #1A1A1A"></div></div>
+          <div style="display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center"><span>Public service</span><div style="height: 14px; width: 22%; border-radius: 3px; background: #1A1A1A"></div></div>
+        </div>
+      </section>
+      <section style="flex: 1 1 340px; min-width: 0; padding: 20px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 700">Unresolved hotspots by LGA</h2>
+        <div class="ph" style="height: 180px; border-radius: 10px; display: flex; align-items: center; justify-content: center">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #fff; padding: 4px 8px; border-radius: 4px; color: #3D3D3D">CHOROPLETH MAP · LGA / WARD</span>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 20px 32px; border-top: 1px solid #D9D9D4; background: #fff; font-size: 13px; color: #5C5C5C">
+    <span>Non-partisan. Methodology and raw data are public. Reporter identities are never published.</span>
+    <span><strong style="color: #1A1A1A">Not an emergency service.</strong> For emergencies call 112.</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

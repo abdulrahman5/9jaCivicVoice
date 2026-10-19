@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moderation and routing console</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F6B47}a:hover{color:#0A4F34}
+.ph{background:repeating-linear-gradient(45deg,#E4E4DE 0 8px,#EFEFEA 8px 16px)}
+</style>
+</helmet>
+<div style="min-height: 920px; display: flex; flex-wrap: wrap; background: #FAFAF7; color: #1A1A1A; font-family: 'Public Sans', system-ui, sans-serif">
+  <aside style="flex: 1 1 200px; max-width: 100%; box-sizing: border-box; padding: 20px 14px; background: #fff; border-right: 1px solid #D9D9D4; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 8px">
+      <span style="font-size: 18px; font-weight: 700">CivicVoice</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5C5C5C">OPS CONSOLE · LAGOS PILOT</span>
+    </div>
+    <nav aria-label="Console" style="display: flex; flex-direction: column; gap: 2px; font-size: 14px">
+      <a href="#" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 8px; border-radius: 8px; background: #DFF0E7; color: #0A4F34; font-weight: 600; text-decoration: none">Moderation queue <span style="font-size: 12px; padding: 1px 7px; border-radius: 999px; background: #0F6B47; color: #fff">48</span></a>
+      <a href="#" style="padding: 10px 8px; border-radius: 8px; color: #1A1A1A; text-decoration: none">Routing &amp; SLAs</a>
+      <a href="#" style="padding: 10px 8px; border-radius: 8px; color: #1A1A1A; text-decoration: none">Agencies &amp; contacts</a>
+      <a href="#" style="padding: 10px 8px; border-radius: 8px; color: #1A1A1A; text-decoration: none">Escalations</a>
+      <a href="#" style="padding: 10px 8px; border-radius: 8px; color: #1A1A1A; text-decoration: none">Analytics</a>
+      <a href="#" style="padding: 10px 8px; border-radius: 8px; color: #1A1A1A; text-decoration: none">Safety &amp; takedowns</a>
+      <a href="#" style="padding: 10px 8px; border-radius: 8px; color: #1A1A1A; text-decoration: none">Team &amp; roles</a>
+    </nav>
+  </aside>
+
+  <main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px 28px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700">Moderation queue</h1>
+        <span style="font-size: 14px; color: #5C5C5C">Verify, de-duplicate, protect reporters, then route to the right agency.</span>
+      </div>
+      <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid #D9D9D4; border-radius: 10px; background: #fff; min-width: 240px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5C5C5C" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+        <input type="search" placeholder="Search ID, text, ward" aria-label="Search reports" style="flex: 1; border: 0; outline: none; font: inherit; font-size: 14px; background: none">
+      </label>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <button style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 13px">State: Lagos ▾</button>
+      <button style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 13px">Category: All ▾</button>
+      <button style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 13px">Channel: All ▾</button>
+      <button style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #1A1A1A; background: #1A1A1A; color: #fff; font: inherit; font-size: 13px; font-weight: 600">Flagged only</button>
+      <button style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 13px">Oldest first ▾</button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start">
+      <div style="flex: 999 1 480px; min-width: 0; overflow-x: auto; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff">
+        <table style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px">
+          <thead>
+            <tr style="text-align: left; color: #5C5C5C; font-size: 12px; border-bottom: 1px solid #D9D9D4">
+              <th style="padding: 10px 12px; font-weight: 600">Report</th>
+              <th style="padding: 10px 12px; font-weight: 600">LGA</th>
+              <th style="padding: 10px 12px; font-weight: 600">Channel</th>
+              <th style="padding: 10px 12px; font-weight: 600">Flags</th>
+              <th style="padding: 10px 12px; font-weight: 600">Age</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #EDEDE8; background: #F1F7F3; box-shadow: inset 3px 0 0 #0F6B47">
+              <td style="padding: 12px"><div style="font-weight: 600">Transformer sparking, no light</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5C5C5C">LAG-0820 · Electricity</div></td>
+              <td style="padding: 12px">Ikeja</td>
+              <td style="padding: 12px">WhatsApp</td>
+              <td style="padding: 12px"><span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: #FBEBD7; color: #8A4B00">Duplicate?</span></td>
+              <td style="padding: 12px">2h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #EDEDE8">
+              <td style="padding: 12px"><div style="font-weight: 600">Officer asked for money at NIN centre</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5C5C5C">LAG-0817 · Public service</div></td>
+              <td style="padding: 12px">Surulere</td>
+              <td style="padding: 12px">App</td>
+              <td style="padding: 12px"><span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: #3A1F4A; color: #fff">Sensitive</span></td>
+              <td style="padding: 12px">5h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #EDEDE8">
+              <td style="padding: 12px"><div style="font-weight: 600">Clinic closed on weekday, no staff</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5C5C5C">LAG-0815 · Health</div></td>
+              <td style="padding: 12px">Alimosho</td>
+              <td style="padding: 12px">USSD</td>
+              <td style="padding: 12px"><span style="font-size: 11px; color: #5C5C5C">—</span></td>
+              <td style="padding: 12px">9h</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #EDEDE8">
+              <td style="padding: 12px"><div style="font-weight: 600">Flooded road after rain</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5C5C5C">LAG-0812 · Roads</div></td>
+              <td style="padding: 12px">Ikeja</td>
+              <td style="padding: 12px">App</td>
+              <td style="padding: 12px"><span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: #E3ECF7; color: #1D4E89">Face in photo</span></td>
+              <td style="padding: 12px">1d</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #EDEDE8">
+              <td style="padding: 12px"><div style="font-weight: 600">Borehole not working for weeks</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5C5C5C">LAG-0809 · Water</div></td>
+              <td style="padding: 12px">Kosofe</td>
+              <td style="padding: 12px">WhatsApp</td>
+              <td style="padding: 12px"><span style="font-size: 11px; color: #5C5C5C">—</span></td>
+              <td style="padding: 12px">1d</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px"><div style="font-weight: 600">"This governor is useless" (no issue)</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5C5C5C">LAG-0806 · Uncategorised</div></td>
+              <td style="padding: 12px">—</td>
+              <td style="padding: 12px">App</td>
+              <td style="padding: 12px"><span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: #EDEDED; color: #3D3D3D">Off-topic</span></td>
+              <td style="padding: 12px">2d</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <section aria-label="Selected report" style="flex: 1 1 340px; min-width: 0; box-sizing: border-box; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">LAG-0820</span>
+          <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: #EDEDED; color: #3D3D3D">Received</span>
+        </div>
+        <div class="ph" style="height: 120px; border-radius: 10px; position: relative">
+          <span style="position: absolute; left: 8px; bottom: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; background: #fff; padding: 2px 6px; border-radius: 4px; color: #3D3D3D">VOICE NOTE 0:14 · auto-transcribed</span>
+        </div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.5">"Whole street don dey without light since Sunday storm. Transformer dey spark."</p>
+        <dl style="margin: 0; display: grid; grid-template-columns: 100px 1fr; gap: 6px 10px; font-size: 13px">
+          <dt style="color: #5C5C5C">Location</dt><dd style="margin: 0">[Street], Ikeja · Ward 04</dd>
+          <dt style="color: #5C5C5C">Reporter</dt><dd style="margin: 0">Anonymous · phone hidden</dd>
+          <dt style="color: #5C5C5C">Suggested</dt><dd style="margin: 0">Electricity › Outage <button style="margin-left: 6px; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 600; color: #0F6B47">Accept</button></dd>
+        </dl>
+        <div style="padding: 12px; border-radius: 10px; background: #FBEBD7; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #5E3300">
+          <strong>3 likely duplicates within 500 m</strong>
+          <span>LAG-0794 · "No power for 5 days after storm" · 214 Me too</span>
+          <button style="align-self: flex-start; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #8A4B00; background: #fff; font: inherit; font-size: 13px; font-weight: 600; color: #5E3300">Merge into LAG-0794</button>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Route to
+          <select style="height: 40px; padding: 0 10px; border: 1px solid #D9D9D4; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; font-weight: 400">
+            <option>[Electricity DisCo] · Ikeja business unit</option>
+          </select>
+        </label>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button style="flex: 1; height: 42px; border-radius: 10px; border: 0; background: #0F6B47; color: #fff; font: inherit; font-size: 14px; font-weight: 600">Verify &amp; forward</button>
+          <button style="height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 14px">Reject ▾</button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":920}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
