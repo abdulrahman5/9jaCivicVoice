@@ -89,6 +89,8 @@ It takes about 20 minutes, all in web dashboards, with three free accounts: **Su
 
 ## Troubleshooting
 
+If the workflow fails at "Create or refresh the demo moderator", the run's summary page shows the error, usually with the fix, under **Annotations**.
+
 | Symptom | Fix |
 | --- | --- |
 | Pages show no issues; logs mention `Invalid schema` or `permission denied for schema core` | Step 1.2: expose `core`, `ops`, `public_read` |
