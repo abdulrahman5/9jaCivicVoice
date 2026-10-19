@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agency response dashboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F6B47}a:hover{color:#0A4F34}
+.ph{background:repeating-linear-gradient(45deg,#E4E4DE 0 8px,#EFEFEA 8px 16px)}
+</style>
+</helmet>
+<div style="min-height: 920px; display: flex; flex-direction: column; background: #FAFAF7; color: #1A1A1A; font-family: 'Public Sans', system-ui, sans-serif">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 28px; background: #fff; border-bottom: 1px solid #D9D9D4">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <span style="font-size: 17px; font-weight: 700">CivicVoice <span style="font-weight: 400; color: #5C5C5C">for Agencies</span></span>
+      <span style="height: 24px; width: 1px; background: #D9D9D4"></span>
+      <button style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 14px; font-weight: 600">[Electricity DisCo] · Ikeja unit ▾</button>
+    </div>
+    <nav aria-label="Agency" style="display: flex; flex-wrap: wrap; gap: 4px; font-size: 14px">
+      <a href="#" style="padding: 8px 12px; border-radius: 8px; background: #DFF0E7; color: #0A4F34; font-weight: 600; text-decoration: none">Inbox</a>
+      <a href="#" style="padding: 8px 12px; border-radius: 8px; color: #1A1A1A; text-decoration: none">Map</a>
+      <a href="#" style="padding: 8px 12px; border-radius: 8px; color: #1A1A1A; text-decoration: none">Reports &amp; exports</a>
+      <a href="#" style="padding: 8px 12px; border-radius: 8px; color: #1A1A1A; text-decoration: none">My scorecard</a>
+    </nav>
+  </header>
+
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1360px; margin: 0 auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+      <div style="padding: 16px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 13px; color: #5C5C5C">New, not acknowledged</span>
+        <span style="font-size: 30px; font-weight: 700">[00]</span>
+      </div>
+      <div style="padding: 16px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 3px 0 #8A4B00">
+        <span style="font-size: 13px; color: #5C5C5C">Past 7-day SLA</span>
+        <span style="font-size: 30px; font-weight: 700; color: #8A4B00">[00]</span>
+      </div>
+      <div style="padding: 16px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 13px; color: #5C5C5C">Median time to acknowledge</span>
+        <span style="font-size: 30px; font-weight: 700">[0.0] days</span>
+      </div>
+      <div style="padding: 16px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 13px; color: #5C5C5C">Citizen-confirmed fixes (30 days)</span>
+        <span style="font-size: 30px; font-weight: 700">[00]%</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+      <section aria-label="Tickets" style="flex: 999 1 460px; min-width: 0; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; overflow: hidden">
+        <div role="tablist" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px 0; border-bottom: 1px solid #D9D9D4; font-size: 14px">
+          <button role="tab" aria-selected="true" style="padding: 10px 12px; border: 0; border-bottom: 2px solid #0F6B47; background: none; font: inherit; font-weight: 600; color: #1A1A1A">New (12)</button>
+          <button role="tab" aria-selected="false" style="padding: 10px 12px; border: 0; background: none; font: inherit; color: #5C5C5C">In progress (31)</button>
+          <button role="tab" aria-selected="false" style="padding: 10px 12px; border: 0; background: none; font: inherit; color: #5C5C5C">Overdue (6)</button>
+          <button role="tab" aria-selected="false" style="padding: 10px 12px; border: 0; background: none; font: inherit; color: #5C5C5C">Awaiting citizen (9)</button>
+          <button role="tab" aria-selected="false" style="padding: 10px 12px; border: 0; background: none; font: inherit; color: #5C5C5C">Closed</button>
+        </div>
+        <ul style="list-style: none; margin: 0; padding: 0">
+          <li style="display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-bottom: 1px solid #EDEDE8; background: #F1F7F3; box-shadow: inset 3px 0 0 #0F6B47">
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 15px; font-weight: 600">No power for 5 days after storm</span>
+              <span style="font-size: 13px; color: #5C5C5C">LAG-0794 · [Estate], Ward 04 · 4 merged reports · 214 Me too</span>
+            </div>
+            <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: #FBEBD7; color: #8A4B00; white-space: nowrap">Day 5 of 7</span>
+            <span style="font-size: 13px; color: #5C5C5C; white-space: nowrap">Unassigned</span>
+          </li>
+          <li style="display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-bottom: 1px solid #EDEDE8">
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 15px; font-weight: 600">Estimated bill though meter installed</span>
+              <span style="font-size: 13px; color: #5C5C5C">LAG-0801 · Ward 02 · 1 report</span>
+            </div>
+            <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: #EDEDED; color: #3D3D3D; white-space: nowrap">Day 2 of 7</span>
+            <span style="font-size: 13px; color: #5C5C5C; white-space: nowrap">A. Bello</span>
+          </li>
+          <li style="display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-bottom: 1px solid #EDEDE8">
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 15px; font-weight: 600">Fallen pole across road</span>
+              <span style="font-size: 13px; color: #5C5C5C">LAG-0788 · Ward 07 · 9 Me too · safety risk</span>
+            </div>
+            <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: #5E1A1A; color: #fff; white-space: nowrap">Overdue · day 9</span>
+            <span style="font-size: 13px; color: #5C5C5C; white-space: nowrap">Field team B</span>
+          </li>
+          <li style="display: flex; gap: 14px; align-items: center; padding: 14px 16px">
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 15px; font-weight: 600">Low voltage every evening</span>
+              <span style="font-size: 13px; color: #5C5C5C">LAG-0779 · Ward 04 · 27 Me too</span>
+            </div>
+            <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: #EDEDED; color: #3D3D3D; white-space: nowrap">Day 1 of 7</span>
+            <span style="font-size: 13px; color: #5C5C5C; white-space: nowrap">Unassigned</span>
+          </li>
+        </ul>
+      </section>
+
+      <section aria-label="Respond to ticket" style="flex: 1 1 380px; min-width: 0; box-sizing: border-box; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5C5C5C">LAG-0794 · ELECTRICITY › OUTAGE</span>
+          <h2 style="margin: 0; font-size: 18px; font-weight: 700">No power for 5 days after storm</h2>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <div class="ph" style="flex: 1; height: 72px; border-radius: 8px"></div>
+          <div class="ph" style="flex: 1; height: 72px; border-radius: 8px"></div>
+          <div class="ph" style="flex: 1; height: 72px; border-radius: 8px"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Status
+            <select style="height: 40px; padding: 0 10px; border: 1px solid #D9D9D4; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; font-weight: 400"><option>Acknowledged</option></select>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Assign to
+            <select style="height: 40px; padding: 0 10px; border: 1px solid #D9D9D4; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; font-weight: 400"><option>Field team A</option></select>
+          </label>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Public reply <span style="font-weight: 400; color: #5C5C5C">Sent to 4 reporters and shown on the issue page</span>
+          <textarea rows="3" style="resize: none; padding: 10px 12px; border: 1px solid #D9D9D4; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 400; color: #1A1A1A">Faulty transformer confirmed. Repair crew scheduled for Mon 21 Oct.</textarea>
+        </label>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px">
+          <span style="color: #5C5C5C; align-self: center">Templates:</span>
+          <button style="padding: 5px 9px; border-radius: 999px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 12px">Crew scheduled</button>
+          <button style="padding: 5px 9px; border-radius: 999px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 12px">Need more info</button>
+          <button style="padding: 5px 9px; border-radius: 999px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 12px">Not our jurisdiction</button>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Internal note <span style="font-weight: 400; color: #5C5C5C">Never shown publicly</span>
+          <input type="text" placeholder="e.g. Needs 500kVA replacement, procurement ref…" style="height: 40px; padding: 0 12px; border: 1px solid #D9D9D4; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 400">
+        </label>
+        <div style="display: flex; gap: 8px">
+          <button style="flex: 1; height: 44px; border-radius: 10px; border: 0; background: #0F6B47; color: #fff; font: inherit; font-size: 14px; font-weight: 600">Post update</button>
+          <button style="height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #D9D9D4; background: #fff; font: inherit; font-size: 14px">Mark resolved</button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":920}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

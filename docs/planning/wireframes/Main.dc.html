@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F6B47}a:hover{color:#0A4F34}
+.ph{background:repeating-linear-gradient(45deg,#E4E4DE 0 8px,#EFEFEA 8px 16px)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #FAFAF7; color: #1A1A1A; font-family: 'Public Sans', system-ui, sans-serif; overflow: hidden">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 12px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <div style="font-weight: 700; font-size: 20px; letter-spacing: -0.01em">CivicVoice</div>
+      <button style="display: flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; font: inherit; font-size: 13px; color: #5C5C5C; cursor: pointer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
+        Ikeja LGA, Lagos
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+      </button>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <button aria-label="Change language" style="height: 44px; min-width: 44px; padding: 0 10px; border: 1px solid #D9D9D4; border-radius: 22px; background: #fff; font: inherit; font-size: 13px; font-weight: 600; color: #1A1A1A">EN</button>
+      <button aria-label="Notifications" style="width: 44px; height: 44px; border: 1px solid #D9D9D4; border-radius: 22px; background: #fff; display: flex; align-items: center; justify-content: center; color: #1A1A1A">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <main style="flex: 1; overflow: hidden; padding: 4px 20px 0; display: flex; flex-direction: column; gap: 22px">
+    <a href="Report-Category.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #0F6B47; color: #fff; border-radius: 16px; padding: 20px; text-decoration: none">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="font-size: 21px; font-weight: 700">Report an issue</div>
+        <div style="font-size: 14px; color: #E2F2EA">About 60 seconds · you can stay anonymous</div>
+      </div>
+      <span style="width: 48px; height: 48px; border-radius: 24px; background: #fff; color: #0F6B47; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      </span>
+    </a>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Browse by category</h2>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+        <button style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; color: #1A1A1A">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 3L4 21M16 3l4 18M12 4v3M12 11v3M12 18v2"></path></svg>Roads
+        </button>
+        <button style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; color: #1A1A1A">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"></path></svg>Power
+        </button>
+        <button style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; color: #1A1A1A">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></svg>Water
+        </button>
+        <button style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; color: #1A1A1A">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"></path></svg>Health
+        </button>
+        <button style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; color: #1A1A1A">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z"></path></svg>Public services
+        </button>
+        <button style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; border: 1px solid #D9D9D4; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; color: #1A1A1A">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg>Other
+        </button>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600">Issues near you</h2>
+        <a href="Map.dc.html" style="font-size: 13px; font-weight: 600">See on map</a>
+      </div>
+
+      <article style="display: flex; gap: 12px; padding: 12px; background: #fff; border: 1px solid #D9D9D4; border-radius: 12px">
+        <div class="ph" style="width: 60px; height: 60px; border-radius: 8px; flex-shrink: 0"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1">
+          <div style="font-size: 15px; font-weight: 600">Collapsed drainage blocking road</div>
+          <div style="font-size: 13px; color: #5C5C5C">[Street name], Ikeja · 2 days ago</div>
+          <div style="display: flex; align-items: center; justify-content: space-between">
+            <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: #E3ECF7; color: #1D4E89">Forwarded</span>
+            <button style="display: flex; align-items: center; gap: 6px; border: 1px solid #D9D9D4; border-radius: 999px; background: #fff; padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 600; color: #1A1A1A">+1 Me too · 86</button>
+          </div>
+        </div>
+      </article>
+
+      <article style="display: flex; gap: 12px; padding: 12px; background: #fff; border: 1px solid #D9D9D4; border-radius: 12px">
+        <div class="ph" style="width: 60px; height: 60px; border-radius: 8px; flex-shrink: 0"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1">
+          <div style="font-size: 15px; font-weight: 600">No power for 5 days after storm</div>
+          <div style="font-size: 13px; color: #5C5C5C">[Estate name], Ikeja · 5 days ago</div>
+          <div style="display: flex; align-items: center; justify-content: space-between">
+            <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: #FBEBD7; color: #8A4B00">Acknowledged</span>
+            <button style="display: flex; align-items: center; gap: 6px; border: 1px solid #D9D9D4; border-radius: 999px; background: #fff; padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 600; color: #1A1A1A">+1 Me too · 214</button>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <nav aria-label="Primary" style="display: flex; justify-content: space-around; align-items: flex-end; border-top: 1px solid #D9D9D4; background: #fff; padding: 8px 8px 22px">
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 60px; min-height: 44px; font-size: 11px; font-weight: 600; color: #0F6B47; text-decoration: none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg>Home
+    </a>
+    <a href="Map.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 60px; min-height: 44px; font-size: 11px; color: #5C5C5C; text-decoration: none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"></path><path d="M9 4v14M15 6v14"></path></svg>Map
+    </a>
+    <a href="Report-Category.dc.html" aria-label="Report an issue" style="width: 56px; height: 56px; border-radius: 28px; background: #0F6B47; color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 4px">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+    </a>
+    <a href="Tracking.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 60px; min-height: 44px; font-size: 11px; color: #5C5C5C; text-decoration: none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>My reports
+    </a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 60px; min-height: 44px; font-size: 11px; color: #5C5C5C; text-decoration: none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Account
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
