@@ -16,6 +16,7 @@
     "db:civic:start": "supabase start --workdir db/civic",
     "db:civic:stop": "supabase stop --workdir db/civic",
     "db:civic:reset": "supabase db reset --workdir db/civic",
+    "db:civic:test": "supabase test db --workdir db/civic",
     "db:vault:start": "supabase start --workdir db/vault",
     "db:vault:stop": "supabase stop --workdir db/vault",
     "db:vault:reset": "supabase db reset --workdir db/vault",

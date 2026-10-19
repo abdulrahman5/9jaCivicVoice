@@ -10,6 +10,11 @@ export const metadata: Metadata = { title: "Respond to issue", robots: { index: 
 export const dynamic = "force-dynamic";
 
 const AGENCY_STATUSES = ["acknowledged", "in_progress", "resolved"] as const;
+const STATUS_LABELS: Record<(typeof AGENCY_STATUSES)[number], string> = {
+  acknowledged: "Acknowledged: we've seen it",
+  in_progress: "In progress: work has started",
+  resolved: "Resolved: it's fixed",
+};
 
 /** No-login agency response page (PRD F7). */
 export default async function AgencyResponsePage({ params }: { params: Promise<{ token: string }> }) {
@@ -35,7 +40,7 @@ export default async function AgencyResponsePage({ params }: { params: Promise<{
       <div className="flex items-center gap-3">
         <StatusPill status={status} />
         <span className="text-sm text-muted">
-          {issue.lga} · {issue.metoo_count} residents affected
+          {issue.lga} · reported by {issue.metoo_count + 1} {issue.metoo_count === 0 ? "resident" : "residents"}
         </span>
       </div>
 
@@ -49,7 +54,7 @@ export default async function AgencyResponsePage({ params }: { params: Promise<{
             <select name="status" className="h-11 rounded-lg border border-line px-3 font-normal">
               {options.map((s) => (
                 <option key={s} value={s}>
-                  {s.replace("_", " ")}
+                  {STATUS_LABELS[s]}
                 </option>
               ))}
             </select>

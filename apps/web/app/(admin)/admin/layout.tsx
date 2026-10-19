@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentStaff } from "@/modules/auth";
+import { signOut } from "../login/actions";
 
 export const metadata: Metadata = { title: "Ops console", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -22,18 +23,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin" className="rounded-lg px-2 py-2 text-ink no-underline hover:bg-fill">
             Moderation queue
           </Link>
-          <Link href="/admin/agencies" className="rounded-lg px-2 py-2 text-ink no-underline hover:bg-fill">
-            Agencies
-          </Link>
-          {staff.role !== "moderator" && (
-            <Link href="/admin/police" className="rounded-lg px-2 py-2 text-ink no-underline hover:bg-fill">
-              Police reports
-            </Link>
-          )}
         </nav>
-        <p className="mt-auto text-xs text-muted">
-          {staff.email} · {staff.role}
-        </p>
+        <div className="mt-auto flex flex-col gap-2 text-xs text-muted">
+          <span>
+            {staff.displayName} · {staff.role.replace("_", " ")}
+          </span>
+          <form action={signOut}>
+            <button type="submit" className="text-sm font-semibold text-accent">
+              Sign out
+            </button>
+          </form>
+        </div>
       </aside>
       <main className="min-w-0 flex-[999_1_560px] p-6">{children}</main>
     </div>

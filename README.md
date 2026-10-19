@@ -75,13 +75,15 @@ Keep `officer.pem` offline. Anyone who has it can read officer details.
 | `pnpm check` | Lint, typecheck and test everything (the same as CI) |
 | `pnpm test` | Unit tests (Vitest) in every package |
 | `pnpm db:civic:reset` | Rebuild the local civic database from migrations + seed |
+| `pnpm db:civic:test` | Database tests (pgTAP) for the moderation functions |
+| `pnpm --filter @civicvoice/web staff:create <email> "<name>" <role>` | Create a staff account (roles: `moderator`, `admin`, `police_moderator`); prints a one-time password |
 | `pnpm db:types` | Regenerate `packages/db/src/database.types.ts` from the local civic schema |
 
 ## How a report flows
 
 1. **Web:** `POST /api/reports` → `core.submit_report()` creates the issue, report and "received" event, fills LGA/ward from boundaries, and enqueues triage.
 2. **WhatsApp:** Meta → `POST /api/whatsapp/webhook` (signature checked) → `wa_inbound` queue → `POST /api/jobs/run` (called each minute by pg_cron) → bot state machine → same `core.submit_report()`.
-3. **Moderation:** a moderator verifies and routes the report; the agency gets an email with a signed, no-login link to `/r/[token]`.
+3. **Moderation:** staff sign in at `/login` (password, then an authenticator code; set up on first sign-in). In `/admin` they edit, merge, reject, or verify and route each report through SQL functions that re-check state and write the audit log. A routed issue gets a signed, no-login agency link (`/r/[token]`), which the moderator emails to the agency until the `forward_agency` email job lands.
 4. **Updates:** every status change goes through `core.change_status()`, which checks the transition, writes the event and the audit log, and enqueues `notify_citizen`.
 5. **Scorecard:** `public_read.scorecard` is rebuilt nightly. The public site reads only the `public_read` schema, using the anon key.
 
@@ -109,14 +111,13 @@ See the architecture doc's production readiness checklist. In short:
 - Web report flow, tracking, public pages, scorecard.
 - WhatsApp webhook, bot state machine and job runner.
 - Agency response page.
+- Staff sign-in with required authenticator codes (TOTP); moderation console with edit, merge, reject, verify and route.
 - Police intake Worker with encryption and grid privacy.
 - Both database schemas with RLS, queues, cron, retention.
 - CI, release and backup workflows.
 
 **Next up:**
-- Staff sign-in with TOTP.
-- Moderation actions (verify, merge, route).
-- Media upload via signed URLs.
+- Media upload via signed URLs, and moderator photo approval.
 - Job handlers for `media_fetch`, `transcribe`, `triage` (Claude Haiku), `notify_citizen`, `forward_agency` and `publish_media`.
 - Duplicate check in the web flow.
 - Map and Wins pages.
