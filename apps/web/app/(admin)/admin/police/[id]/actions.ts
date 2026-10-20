@@ -4,11 +4,14 @@ import { revalidatePath } from "next/cache";
 import { vaultServiceClient } from "@civicvoice/vault-db";
 import { requireStaff } from "@/modules/auth";
 import { friendlyDbError } from "@/modules/moderation/schemas";
+import { RECIPIENT_LABELS } from "@/modules/vault/labels";
 import {
+  ForwardOutcomeInput,
   ForwardTextInput,
   PoliceRejectInput,
   PoliceReplyInput,
   PoliceStatusInput,
+  RecordForwardInput,
   identifyingHints,
 } from "@/modules/vault/schemas";
 
@@ -94,4 +97,43 @@ export async function replyToReporter(_prev: ActionState, fd: FormData): Promise
   if (error) return { error: friendlyDbError(error) };
   refresh(parsed.data.reportId);
   return { ok: true, message: "Sent. The reporter sees it next time they check their code." };
+}
+
+export async function recordForward(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const staff = await requireStaff(["police_moderator"]);
+  const parsed = RecordForwardInput.safeParse(form(fd));
+  if (!parsed.success) return { error: parsed.error.issues[0]!.message };
+  const v = parsed.data;
+
+  const { error } = await police().rpc("record_forward", {
+    p_report_id: v.reportId,
+    p_moderator_id: staff.userId,
+    p_recipient: v.recipient,
+    p_channel: v.channel,
+    p_reference: v.reference ?? null,
+  });
+  if (error) {
+    if (error.code === "23505") return { error: `Already recorded as sent to the ${RECIPIENT_LABELS[v.recipient]}.` };
+    return { error: friendlyDbError(error) };
+  }
+  refresh(v.reportId);
+  return { ok: true, message: `Recorded as sent to the ${RECIPIENT_LABELS[v.recipient]}.` };
+}
+
+export async function setForwardOutcome(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const staff = await requireStaff(["police_moderator"]);
+  const parsed = ForwardOutcomeInput.safeParse(form(fd));
+  if (!parsed.success) return { error: parsed.error.issues[0]!.message };
+  const v = parsed.data;
+
+  const { error } = await police().rpc("set_forward_outcome", {
+    p_report_id: v.reportId,
+    p_moderator_id: staff.userId,
+    p_recipient: v.recipient,
+    p_outcome: v.outcome,
+    p_reference: v.reference ?? null,
+  });
+  if (error) return { error: friendlyDbError(error) };
+  refresh(v.reportId);
+  return { ok: true, message: "Outcome saved. The reporter sees it on their status page." };
 }

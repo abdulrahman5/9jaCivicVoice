@@ -4,8 +4,11 @@ import { notFound } from "next/navigation";
 import { requireStaff } from "@/modules/auth";
 import { isConfigured } from "@/modules/env";
 import { POLICE_TABS, openPoliceReport, staffNames } from "@/modules/vault/data";
+import { POLICE_RECIPIENTS } from "@civicvoice/validation";
 import { CITY_LABELS, OUTCOME_LABELS, POLICE_TYPE_LABELS, RECIPIENT_LABELS, WHEN_LABELS } from "@/modules/vault/labels";
-import { ForwardTextForm, RejectForm, ReplyForm, StatusButton } from "./forms";
+import { buildForwardingPack } from "@/modules/vault/pack";
+import { RECIPIENT_CONTACTS } from "@/modules/vault/recipients";
+import { ForwardPanel, ForwardTextForm, OutcomeForm, RejectForm, ReplyForm, StatusButton } from "./forms";
 
 export const metadata: Metadata = { title: "Police report" };
 
@@ -41,6 +44,7 @@ export default async function PoliceReportPage({ params }: { params: Promise<{ i
 
   const names = await staffNames([
     ...report.access.map((a) => a.moderator_id),
+    ...report.forwards.map((f) => f.forwarded_by),
     ...report.messages.flatMap((m) => (m.moderator_id ? [m.moderator_id] : [])),
   ]);
   const who = (moderatorId: string | null) => (moderatorId ? (names.get(moderatorId) ?? "Unknown moderator") : "");
@@ -145,17 +149,45 @@ export default async function PoliceReportPage({ params }: { params: Promise<{ i
             </Panel>
           )}
 
-          {report.forwards.length > 0 && (
-            <Panel title="Forwarded to">
-              <ul className="flex flex-col gap-2 text-sm">
-                {report.forwards.map((f) => (
-                  <li key={f.recipient}>
-                    <strong>{RECIPIENT_LABELS[f.recipient]}</strong> via {f.channel}
-                    {f.reference && ` (ref ${f.reference})`} · {fmt(f.forwarded_at)}
-                    <div className="text-muted">{OUTCOME_LABELS[f.outcome]}</div>
-                  </li>
-                ))}
-              </ul>
+          {(report.forwards.length > 0 || (canForward && report.consent_to_forward)) && (
+            <Panel title="Forward to the CRU and PSC">
+              {POLICE_RECIPIENTS.map((recipient) => {
+                const sent = report.forwards.find((f) => f.recipient === recipient);
+                if (sent) {
+                  return (
+                    <div key={recipient} className="flex flex-col gap-2 border-b border-line pb-4 text-sm last:border-0 last:pb-0">
+                      <h3 className="font-semibold">{RECIPIENT_LABELS[recipient]}</h3>
+                      <p>
+                        Sent via {sent.channel}
+                        {sent.reference && ` · their ref ${sent.reference}`} · {fmt(sent.forwarded_at)} by {who(sent.forwarded_by)}
+                      </p>
+                      <p>
+                        Outcome: <strong>{OUTCOME_LABELS[sent.outcome]}</strong>
+                      </p>
+                      {report.status !== "closed" && (
+                        <OutcomeForm reportId={report.id} recipient={recipient} current={sent.outcome} />
+                      )}
+                    </div>
+                  );
+                }
+                if (!canForward || !report.consent_to_forward) return null;
+                if (!report.forward_text) {
+                  return (
+                    <p key={recipient} className="text-sm text-muted">
+                      {RECIPIENT_LABELS[recipient]}: save the redacted copy first. The pack is built from it.
+                    </p>
+                  );
+                }
+                return (
+                  <ForwardPanel
+                    key={recipient}
+                    reportId={report.id}
+                    recipient={recipient}
+                    pack={buildForwardingPack({ ...report, forward_text: report.forward_text }, recipient)}
+                    contacts={RECIPIENT_CONTACTS[recipient]}
+                  />
+                );
+              })}
             </Panel>
           )}
 

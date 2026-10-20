@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { POLICE_RECIPIENTS } from "@civicvoice/validation";
 
 /** Inputs for the police moderation actions (docs/POLICE.md, section 3). Kept pure so they're unit-tested. */
 
@@ -38,6 +39,34 @@ export const ForwardTextInput = z.object({
 export const PoliceReplyInput = z.object({
   reportId: ReportId,
   body: z.string().trim().min(1, "Write a reply first").max(1000),
+});
+
+const Recipient = z.enum(POLICE_RECIPIENTS);
+const Reference = z
+  .string()
+  .trim()
+  .max(100, "Keep the reference under 100 characters")
+  .transform((v) => v || undefined)
+  .optional();
+
+/** Records that the moderator sent the pack. The channel is a configured contact, or described by hand. */
+export const RecordForwardInput = z
+  .object({
+    reportId: ReportId,
+    recipient: Recipient,
+    channel: z.string().trim().max(100),
+    otherChannel: z.string().trim().max(100).default(""),
+    reference: Reference,
+  })
+  .transform(({ channel, otherChannel, ...v }) => ({ ...v, channel: channel === "other" ? otherChannel : channel }))
+  .refine((v) => v.channel.length >= 2, { message: "Say how you sent it", path: ["otherChannel"] });
+
+/** Outcomes a moderator records. "awaiting" is the starting point; no_response is also set automatically after 30 days. */
+export const ForwardOutcomeInput = z.object({
+  reportId: ReportId,
+  recipient: Recipient,
+  outcome: z.enum(["acknowledged", "action_reported", "no_response"]),
+  reference: Reference,
 });
 
 /**

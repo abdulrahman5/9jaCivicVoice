@@ -97,7 +97,7 @@ Forwarding outcome is a separate field (below), so "forwarded, no response" stil
   - officer details, decrypted, since that's what the CRU needs to act
   - our report reference
 
-  It never includes the status code, timestamps finer than the day, or anything about the reporter. The moderator sends it from the project's own email or through the CRU's official channels, then records `forwarded_at`, the channel, and any reference number the CRU or PSC gives back. (Sending the pack automatically through an email API would put report content through another third party, so leave it out of v1.)
+  It never includes the status code, timestamps finer than the day, or anything about the reporter. The official contacts moderators send to are listed in `apps/web/modules/vault/recipients.ts` (CRU phone numbers to be supplied by the project owner). The moderator sends it from the project's own email or through the CRU's official channels, then records `forwarded_at`, the channel, and any reference number the CRU or PSC gives back. (Sending the pack automatically through an email API would put report content through another third party, so leave it out of v1.)
 - **Outcome**, set by the moderator:
   - `awaiting`
   - `acknowledged`

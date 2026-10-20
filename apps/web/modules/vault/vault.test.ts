@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { openOfficerDetails } from "./officer";
-import { ForwardTextInput, PoliceRejectInput, PoliceReplyInput, PoliceStatusInput, identifyingHints } from "./schemas";
+import { buildForwardingPack, incidentDate, packReference, type PackInput } from "./pack";
+import {
+  ForwardOutcomeInput,
+  ForwardTextInput,
+  PoliceRejectInput,
+  PoliceReplyInput,
+  PoliceStatusInput,
+  RecordForwardInput,
+  identifyingHints,
+} from "./schemas";
 
 const reportId = "6f9c2a10-1b2c-4d5e-8f90-123456789abc";
 const b64 = (buf: ArrayBuffer | Uint8Array) => btoa(String.fromCharCode(...new Uint8Array(buf)));
@@ -63,5 +72,73 @@ describe("identifyingHints", () => {
 
   it("stays quiet on an ordinary redacted account", () => {
     expect(identifyingHints("Officers at a checkpoint on the expressway demanded N5,000 around 8pm.")).toEqual([]);
+  });
+});
+
+describe("forwarding inputs", () => {
+  it("records a configured channel, or the one described by hand", () => {
+    expect(RecordForwardInput.parse({ reportId, recipient: "cru", channel: "CRU WhatsApp (0800 000 0000)" }).channel).toBe(
+      "CRU WhatsApp (0800 000 0000)",
+    );
+    expect(RecordForwardInput.parse({ reportId, recipient: "psc", channel: "other", otherChannel: "Hand delivered" }).channel).toBe(
+      "Hand delivered",
+    );
+    expect(RecordForwardInput.safeParse({ reportId, recipient: "psc", channel: "other", otherChannel: "" }).success).toBe(false);
+    expect(RecordForwardInput.safeParse({ reportId, recipient: "ngo", channel: "x y" }).success).toBe(false);
+  });
+
+  it("treats an empty reference as none", () => {
+    expect(RecordForwardInput.parse({ reportId, recipient: "cru", channel: "CRU email", reference: " " }).reference).toBeUndefined();
+    expect(ForwardOutcomeInput.parse({ reportId, recipient: "cru", outcome: "acknowledged", reference: "CRU/123" }).reference).toBe(
+      "CRU/123",
+    );
+  });
+
+  it("doesn't let a moderator set an outcome back to awaiting", () => {
+    expect(ForwardOutcomeInput.safeParse({ reportId, recipient: "cru", outcome: "awaiting" }).success).toBe(false);
+  });
+});
+
+describe("forwarding pack", () => {
+  const report: PackInput = {
+    id: "16ee6a0c-4cb0-4844-a415-0e45c41fa3a3",
+    kind: "misconduct",
+    incident_type: "money_demanded",
+    city: "fct",
+    place: "Airport Road checkpoint",
+    when_bucket: "earlier",
+    occurred_on: null,
+    created_at: "2026-10-20T07:27:41.123Z",
+    forward_text: "Officers at a checkpoint demanded N5,000 before letting a bus pass.",
+    officer_details: "Patrol van PL-TEST-01",
+  };
+
+  it("carries what the recipient needs: type, day, place, officer details, redacted text, our reference", () => {
+    const pack = buildForwardingPack(report, "cru");
+    expect(pack).toContain("To: Police Complaint Response Unit");
+    expect(pack).toContain("Type: Money demanded at checkpoint");
+    expect(pack).toContain("Date: before 2026-10-20");
+    expect(pack).toContain("Location: Airport Road checkpoint, FCT Abuja");
+    expect(pack).toContain("Patrol van PL-TEST-01");
+    expect(pack).toContain(report.forward_text);
+    expect(pack).toContain(packReference(report.id));
+  });
+
+  it("leaves out anything finer than the day, and the report's internal id", () => {
+    const pack = buildForwardingPack(report, "psc");
+    expect(pack).not.toMatch(/07:27|T07|\d{2}:\d{2}/);
+    expect(pack).not.toContain(report.id);
+  });
+
+  it("words commendations as recognition", () => {
+    const pack = buildForwardingPack({ ...report, kind: "commendation", incident_type: "refused_bribe" }, "psc");
+    expect(pack).toContain("commendation of police conduct");
+    expect(pack).toContain("What the officer did: Refused a bribe");
+    expect(pack).toContain("pass this recognition to the officer");
+  });
+
+  it("dates 'just now' and 'today' to the filing day in Lagos time, and prefers an exact date", () => {
+    expect(incidentDate({ when_bucket: "today", occurred_on: null, created_at: "2026-10-20T23:30:00Z" })).toBe("2026-10-21");
+    expect(incidentDate({ when_bucket: "today", occurred_on: "2026-10-19", created_at: "2026-10-20T10:00:00Z" })).toBe("2026-10-19");
   });
 });
