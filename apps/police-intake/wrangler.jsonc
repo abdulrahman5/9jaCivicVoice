@@ -14,6 +14,27 @@
     "PUBLIC_SITE_URL": "http://localhost:3000",
     // Cloudflare's always-pass test key for local development. Set the real one per environment.
     "TURNSTILE_SITE_KEY": "1x00000000000000000000AA"
+  },
+  // Deployed by .github/workflows/police-deploy.yml, which passes the vars and secrets.
+  // Logging stays off in every environment (repeated: not every setting is inherited).
+  "env": {
+    // Preview: a workers.dev address, Cloudflare's Turnstile test keys, fake data only.
+    "preview": {
+      "name": "civicvoice-police-intake-preview",
+      "workers_dev": true,
+      // Passed with --var by the workflow, so local values never reach a deployment.
+      "vars": {},
+      "observability": { "enabled": false, "logs": { "enabled": false } },
+      "logpush": false
+    },
+    // Production: only on your own domain (passed with --route), where the WAF rate-limit rule applies.
+    "production": {
+      "name": "civicvoice-police-intake",
+      "workers_dev": false,
+      "vars": {},
+      "observability": { "enabled": false, "logs": { "enabled": false } },
+      "logpush": false
+    }
   }
   // Secrets (set with `wrangler secret put`, or .dev.vars locally):
   //   VAULT_SUPABASE_ANON_KEY     anon key of the vault project (can only call police.submit_report)
@@ -25,6 +46,6 @@
   //
   // Changing STATUS_CODE_PEPPER or STATUS_LOOKUP_KEY makes every existing status code stop working.
   //
-  // Rate limiting is a Cloudflare WAF rule on the route (configured in the dashboard),
+  // Rate limiting is a Cloudflare WAF rule on the production route (docs/DEPLOY-POLICE.md),
   // so this code never needs to read the visitor's IP address.
 }

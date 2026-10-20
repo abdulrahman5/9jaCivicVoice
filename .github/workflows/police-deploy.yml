@@ -1,0 +1,171 @@
+name: Police deploy
+
+# Deploys the police stack (docs/DEPLOY-POLICE.md): migrates the police vault database,
+# sets the Supabase Vault secrets for the bridge and photo deletion, deploys the intake
+# Worker with its secrets, and smoke-tests it without storing anything.
+#
+# Production is refused until the launch gate in docs/POLICE.md has passed and the repo
+# variable POLICE_LAUNCH_GATE_PASSED is set to "true".
+#
+# This repo is public, so these logs are public: no step may print a secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Environment to deploy
+        type: choice
+        options: [preview, production]
+        default: preview
+
+concurrency:
+  group: police-deploy-${{ inputs.target }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: police-${{ inputs.target }}
+    env:
+      TARGET: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Launch gate (production only)
+        if: inputs.target == 'production'
+        run: |
+          if [ "${{ vars.POLICE_LAUNCH_GATE_PASSED }}" != "true" ]; then
+            echo "::error::Police intake can't go to production until the launch gate in docs/POLICE.md has passed (independent security review, no identifying data in logs or rows, legal review, two trained police moderators). Then set the repo variable POLICE_LAUNCH_GATE_PASSED=true."
+            exit 1
+          fi
+
+      - name: Check configuration
+        env:
+          V_VAULT_SUPABASE_URL: ${{ vars.VAULT_SUPABASE_URL }}
+          V_CIVIC_SUPABASE_URL: ${{ vars.CIVIC_SUPABASE_URL }}
+          V_PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          V_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          V_CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          V_POLICE_FORM_DOMAIN: ${{ vars.POLICE_FORM_DOMAIN }}
+          S_VAULT_DB_URL: ${{ secrets.VAULT_DB_URL }}
+          S_CIVIC_DB_URL: ${{ secrets.CIVIC_DB_URL }}
+          S_VAULT_SUPABASE_ANON_KEY: ${{ secrets.VAULT_SUPABASE_ANON_KEY }}
+          S_VAULT_SERVICE_ROLE_KEY: ${{ secrets.VAULT_SERVICE_ROLE_KEY }}
+          S_CIVIC_ANON_KEY: ${{ secrets.CIVIC_ANON_KEY }}
+          S_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          S_OFFICER_DETAILS_PUBLIC_KEY: ${{ secrets.OFFICER_DETAILS_PUBLIC_KEY }}
+          S_STATUS_CODE_PEPPER: ${{ secrets.STATUS_CODE_PEPPER }}
+          S_STATUS_LOOKUP_KEY: ${{ secrets.STATUS_LOOKUP_KEY }}
+          S_POLICE_BRIDGE_SECRET: ${{ secrets.POLICE_BRIDGE_SECRET }}
+          S_TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+        run: |
+          missing=""
+          for name in VAULT_SUPABASE_URL CIVIC_SUPABASE_URL PUBLIC_SITE_URL TURNSTILE_SITE_KEY CLOUDFLARE_ACCOUNT_ID; do
+            v="V_$name"; [ -n "${!v}" ] || missing="$missing $name(variable)"
+          done
+          if [ "$TARGET" = production ]; then
+            [ -n "$V_POLICE_FORM_DOMAIN" ] || missing="$missing POLICE_FORM_DOMAIN(variable)"
+          fi
+          for name in VAULT_DB_URL CIVIC_DB_URL VAULT_SUPABASE_ANON_KEY VAULT_SERVICE_ROLE_KEY CIVIC_ANON_KEY \
+                      CLOUDFLARE_API_TOKEN OFFICER_DETAILS_PUBLIC_KEY STATUS_CODE_PEPPER STATUS_LOOKUP_KEY \
+                      POLICE_BRIDGE_SECRET TURNSTILE_SECRET_KEY; do
+            s="S_$name"; [ -n "${!s}" ] || missing="$missing $name(secret)"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing in the 'police-$TARGET' environment:$missing. See docs/DEPLOY-POLICE.md."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @civicvoice/police-intake...
+      - run: pnpm --filter @civicvoice/police-intake test
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+
+      - name: Migrate the police vault database
+        env:
+          VAULT_DB_URL: ${{ secrets.VAULT_DB_URL }}
+        run: supabase db push --workdir db/vault --db-url "$VAULT_DB_URL" --yes
+
+      - name: Set Supabase Vault secrets (bridge and photo deletion)
+        env:
+          VAULT_DB_URL: ${{ secrets.VAULT_DB_URL }}
+          CIVIC_DB_URL: ${{ secrets.CIVIC_DB_URL }}
+          CIVIC_REST_URL: ${{ vars.CIVIC_SUPABASE_URL }}/rest/v1
+          CIVIC_ANON_KEY: ${{ secrets.CIVIC_ANON_KEY }}
+          POLICE_BRIDGE_SECRET: ${{ secrets.POLICE_BRIDGE_SECRET }}
+          VAULT_STORAGE_URL: ${{ vars.VAULT_SUPABASE_URL }}/storage/v1
+          VAULT_SERVICE_ROLE_KEY: ${{ secrets.VAULT_SERVICE_ROLE_KEY }}
+        run: |
+          psql "$VAULT_DB_URL" -q -At -f db/vault/supabase/set-secrets.sql
+          psql "$CIVIC_DB_URL" -q -At -f db/civic/supabase/set-police-secret.sql
+
+      - name: Deploy the intake Worker
+        id: worker
+        working-directory: apps/police-intake
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          POLICE_FORM_DOMAIN: ${{ vars.POLICE_FORM_DOMAIN }}
+        run: |
+          args=(--env "$TARGET"
+            --var "VAULT_SUPABASE_URL:${{ vars.VAULT_SUPABASE_URL }}"
+            --var "PUBLIC_SITE_URL:${{ vars.PUBLIC_SITE_URL }}"
+            --var "TURNSTILE_SITE_KEY:${{ vars.TURNSTILE_SITE_KEY }}")
+          if [ "$TARGET" = production ]; then args+=(--route "$POLICE_FORM_DOMAIN/*"); fi
+          pnpm exec wrangler deploy "${args[@]}" | tee deploy.log
+          if [ "$TARGET" = production ]; then
+            url="https://$POLICE_FORM_DOMAIN"
+          else
+            url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          fi
+          [ -n "$url" ] || { echo "::error::Couldn't find the Worker's URL in the deploy output."; exit 1; }
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Set the Worker's secrets
+        working-directory: apps/police-intake
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          VAULT_SUPABASE_ANON_KEY: ${{ secrets.VAULT_SUPABASE_ANON_KEY }}
+          OFFICER_DETAILS_PUBLIC_KEY: ${{ secrets.OFFICER_DETAILS_PUBLIC_KEY }}
+          STATUS_CODE_PEPPER: ${{ secrets.STATUS_CODE_PEPPER }}
+          STATUS_LOOKUP_KEY: ${{ secrets.STATUS_LOOKUP_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+        # The JSON goes straight to wrangler on stdin; nothing is written to disk or printed.
+        run: |
+          node -e 'const k=["VAULT_SUPABASE_ANON_KEY","OFFICER_DETAILS_PUBLIC_KEY","STATUS_CODE_PEPPER","STATUS_LOOKUP_KEY","TURNSTILE_SECRET_KEY"];
+            process.stdout.write(JSON.stringify(Object.fromEntries(k.map((n) => [n, process.env[n]]))));' \
+            | pnpm exec wrangler secret bulk --env "$TARGET"
+
+      - name: Smoke test
+        env:
+          URL: ${{ steps.worker.outputs.url }}
+        run: |
+          for i in $(seq 1 12); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' "$URL/")" = 200 ] && break
+            sleep 5
+          done
+          apps/police-intake/scripts/smoke.sh "$URL"
+
+      - name: Summary
+        env:
+          URL: ${{ steps.worker.outputs.url }}
+        run: |
+          {
+            echo "### Police intake deployed to $TARGET"
+            echo ""
+            echo "Form: $URL"
+            echo ""
+            echo "To link it from the web app, set \`NEXT_PUBLIC_POLICE_FORM_URL=$URL\` in Vercel's"
+            echo "$([ "$TARGET" = production ] && echo Production || echo Preview) environment and redeploy."
+          } >> "$GITHUB_STEP_SUMMARY"

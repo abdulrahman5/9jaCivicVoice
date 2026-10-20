@@ -25,3 +25,6 @@ db/*/supabase/.temp
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
+
+# police stack secrets generated locally (scripts/police-secrets.sh)
+.police-secrets/
