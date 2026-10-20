@@ -28,6 +28,12 @@ const groups = {
   police: z.object({
     NEXT_PUBLIC_POLICE_FORM_URL: z.url(),
   }),
+  // Police vault: only the admin area's police pages use it.
+  vault: z.object({
+    VAULT_SUPABASE_URL: z.url(),
+    VAULT_SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
+    OFFICER_DETAILS_PRIVATE_KEY: z.base64().min(100),
+  }),
 } as const;
 
 type Groups = typeof groups;
