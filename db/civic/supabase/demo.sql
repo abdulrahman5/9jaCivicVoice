@@ -80,6 +80,38 @@ begin
     'Burst pipe flooding the road for 2 days.', 'this_week', '{}', 'demo-hash-2', null, 'en', 'whatsapp');
   perform core.submit_report('lagos', 'roads', 'pothole', 6.612, 3.338, null,
     'buy cheap phones at my shop!!! call 0803...', null, '{}', null, null, 'en', 'web');
+
+  -- Police patterns as the bridge would publish them (FAKE; previews have no police vault).
+  -- The last three completed months, cells inside the sample LGA boxes from seed.sql.
+  for i in 1..3 loop
+    insert into public_read.police_periods (period_start)
+    values ((date_trunc('month', now() at time zone 'Africa/Lagos') - make_interval(months => i))::date);
+  end loop;
+  insert into public_read.police_patterns (period_start, city, grid_cell, kind, incident_type, band)
+  select (date_trunc('month', now() at time zone 'Africa/Lagos') - make_interval(months => v.ago))::date,
+    v.city::core.city, v.cell, v.kind, v.type, v.band
+  from (values
+    (1, 'lagos', '659:334', 'misconduct', 'money_demanded', '11-25'),
+    (1, 'lagos', '659:334', 'misconduct', 'phone_searched_harassment', '3-5'),
+    (1, 'lagos', '660:335', 'misconduct', 'money_demanded', '6-10'),
+    (1, 'lagos', '661:333', 'misconduct', 'unlawful_arrest_detention', '3-5'),
+    (1, 'lagos', '658:336', 'commendation', 'helped_me', '3-5'),
+    (1, 'lagos', '662:331', 'misconduct', 'money_demanded', '26+'),
+    (2, 'lagos', '659:334', 'misconduct', 'money_demanded', '6-10'),
+    (2, 'lagos', '662:331', 'misconduct', 'money_demanded', '11-25'),
+    (3, 'lagos', '662:331', 'misconduct', 'money_demanded', '6-10'),
+    (1, 'fct', '915:735', 'misconduct', 'money_demanded', '6-10'),
+    (1, 'fct', '920:740', 'commendation', 'refused_bribe', '3-5'),
+    (2, 'fct', '915:735', 'misconduct', 'money_demanded', '3-5')
+  ) v(ago, city, cell, kind, type, band);
+  insert into public_read.police_forwarding (period_start, city, recipient, forwarded, acknowledged, action_reported, no_response)
+  select (date_trunc('month', now() at time zone 'Africa/Lagos') - make_interval(months => v.ago))::date,
+    v.city::core.city, v.recipient, v.f, v.a, v.ar, v.nr
+  from (values
+    (1, 'lagos', 'cru', 14, 3, 1, 0), (2, 'lagos', 'cru', 11, 2, 0, 6), (3, 'lagos', 'cru', 8, 1, 1, 6),
+    (1, 'lagos', 'psc', 14, 1, 0, 0), (2, 'lagos', 'psc', 11, 0, 0, 9), (3, 'lagos', 'psc', 8, 1, 0, 7),
+    (1, 'fct', 'cru', 4, 1, 0, 0), (2, 'fct', 'cru', 3, 0, 0, 3), (1, 'fct', 'psc', 4, 0, 0, 0)
+  ) v(ago, city, recipient, f, a, ar, nr);
 end $$;
 
 refresh materialized view public_read.scorecard;

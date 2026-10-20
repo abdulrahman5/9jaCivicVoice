@@ -3,9 +3,13 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(13);
+select plan(15);
 
 select vault.create_secret('test-bridge-secret', 'police_bridge_secret');
+-- Start from empty published tables, even if demo.sql was loaded (rolled back at the end).
+delete from public_read.police_patterns;
+delete from public_read.police_periods;
+delete from public_read.police_forwarding;
 
 create temp table m as
 select
@@ -66,12 +70,23 @@ select throws_ok(
          'forwarded', 1, 'acknowledged', 1, 'action_reported', 1, 'no_response', 0))) $$,
   '23514', null, 'outcomes cannot exceed forwards');
 
+-- Views for the patterns page -----------------------------------------------------------
+
+select is(
+  (select lga || '|' || lat || '|' || lng from public_read.police_areas where grid_cell = '659:334'),
+  'Ikeja|6.595|3.345', 'a published cell gets its centre and the LGA containing it (seed boundaries)');
+select ok(
+  (select svg_path like 'M %' from public_read.lga_outlines where name = 'Ikeja'),
+  'LGA outlines come as SVG path data');
+
 -- Privileges -----------------------------------------------------------------------------
 
 select ok(
   has_table_privilege('anon', 'public_read.police_patterns', 'select')
   and has_table_privilege('anon', 'public_read.police_forwarding', 'select')
   and has_table_privilege('anon', 'public_read.police_periods', 'select')
+  and has_table_privilege('anon', 'public_read.police_areas', 'select')
+  and has_table_privilege('anon', 'public_read.lga_outlines', 'select')
   and not has_table_privilege('anon', 'public_read.police_patterns', 'insert')
   and not has_table_privilege('anon', 'public_read.police_forwarding', 'update')
   and not has_function_privilege('anon', 'public_read.check_bridge_secret(text)', 'execute'),

@@ -82,6 +82,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               </span>
             )}
           </div>
+          <Link href="/police" className="text-[13px] font-semibold">
+            See police conduct patterns
+          </Link>
         </section>
 
         <section className="flex flex-col gap-3">
