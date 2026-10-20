@@ -91,7 +91,7 @@ Keep `officer.pem` offline. Anyone who has it can read officer details.
 
 To get a shareable test URL (Vercel + a Supabase preview project, with fake demo data, a preview build for every pull request), follow [docs/PREVIEW.md](docs/PREVIEW.md).
 
-The PRD, architecture and wireframes from the planning phase are in [docs/planning](docs/planning/README.md).
+The PRD, architecture and wireframes from the planning phase are in [docs/planning](docs/planning/README.md). The police reporting spec is [docs/POLICE.md](docs/POLICE.md).
 
 ## Production setup (one time)
 
