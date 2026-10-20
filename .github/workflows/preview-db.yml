@@ -83,3 +83,13 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PREVIEW_SERVICE_ROLE_KEY }}
           STAFF_PASSWORD: ${{ secrets.DEMO_STAFF_PASSWORD }}
         run: pnpm --filter @civicvoice/web staff:create "${{ vars.DEMO_STAFF_EMAIL }}" "Demo Moderator" moderator
+
+      # Optional: set the DEMO_POLICE_STAFF_EMAIL variable to also get a police moderator
+      # (same password) for trying the police console with the preview police stack.
+      - name: Create or refresh the demo police moderator
+        if: vars.DEMO_POLICE_STAFF_EMAIL != ''
+        env:
+          SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PREVIEW_SERVICE_ROLE_KEY }}
+          STAFF_PASSWORD: ${{ secrets.DEMO_STAFF_PASSWORD }}
+        run: pnpm --filter @civicvoice/web staff:create "${{ vars.DEMO_POLICE_STAFF_EMAIL }}" "Demo Police Moderator" police_moderator

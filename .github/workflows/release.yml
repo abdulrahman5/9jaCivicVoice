@@ -1,7 +1,7 @@
 name: Release
 
 # Production deploy (architecture doc, "Environments and CI/CD"):
-# approve → migrate both databases → deploy Worker → deploy web → smoke test.
+# approve → migrate both databases → deploy web → smoke test. (Police Worker: police-deploy.yml.)
 # Migrations are forward-only and backwards-compatible, so a web rollback is safe.
 
 on:
@@ -50,11 +50,7 @@ jobs:
           supabase link --workdir db/vault --project-ref "${{ vars.VAULT_PROJECT_REF }}"
           supabase db push --workdir db/vault
 
-      - name: Deploy police intake Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm --filter @civicvoice/police-intake exec wrangler deploy --var VAULT_SUPABASE_URL:${{ vars.VAULT_SUPABASE_URL }} --var PUBLIC_SITE_URL:${{ vars.PUBLIC_SITE_URL }}
+      # The police intake Worker is deployed by police-deploy.yml, which enforces the launch gate.
 
       - name: Deploy web app to Vercel
         env:
@@ -72,4 +68,4 @@ jobs:
           curl -fsS "${{ vars.PUBLIC_SITE_URL }}/api/health"
           curl -fsS -o /dev/null "${{ vars.PUBLIC_SITE_URL }}/"
           curl -fsS -o /dev/null "${{ vars.PUBLIC_SITE_URL }}/scorecard"
-          curl -fsS -o /dev/null "${{ vars.POLICE_FORM_URL }}/"
+          if [ -n "${{ vars.POLICE_FORM_URL }}" ]; then curl -fsS -o /dev/null "${{ vars.POLICE_FORM_URL }}/"; fi

@@ -92,7 +92,7 @@ Keep `officer.pem` offline. Anyone who has it can read officer details.
 
 To get a shareable test URL (Vercel + a Supabase preview project, with fake demo data, a preview build for every pull request), follow [docs/PREVIEW.md](docs/PREVIEW.md).
 
-The PRD, architecture and wireframes from the planning phase are in [docs/planning](docs/planning/README.md). The police reporting spec is [docs/POLICE.md](docs/POLICE.md).
+The PRD, architecture and wireframes from the planning phase are in [docs/planning](docs/planning/README.md). The police reporting spec is [docs/POLICE.md](docs/POLICE.md), and deploying the police stack is in [docs/DEPLOY-POLICE.md](docs/DEPLOY-POLICE.md).
 
 ## Production setup (one time)
 
@@ -108,7 +108,7 @@ See the architecture doc's production readiness checklist. In short:
    - `civic_anon_key`
    - `police_bridge_secret` = the same random value
    - `vault_storage_url` = `https://<vault-ref>.supabase.co/storage/v1` and `vault_service_role_key` (deletes purged reports' photos)
-4. Create a Cloudflare Worker route for the police form, plus a WAF rate-limit rule on it. Set the Worker secrets with `wrangler secret put`.
+4. Deploy the police stack with the **Police deploy** workflow ([docs/DEPLOY-POLICE.md](docs/DEPLOY-POLICE.md)): it migrates the vault, sets these Vault secrets and the Worker's, and refuses production until the launch gate has passed. Add the WAF rate-limit rule on the form's domain.
 5. Create a Vercel project for `apps/web` with the production env vars, and the GitHub `production` environment (with required reviewers) holding the secrets that `release.yml` lists.
 6. Load real GRID3 LGA and ward boundaries for Lagos and FCT into `core.lgas` and `core.wards`. The seed only has fake boxes.
 
