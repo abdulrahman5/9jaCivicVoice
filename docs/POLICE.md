@@ -7,7 +7,7 @@ Builds on PRD feature F5 and the architecture doc's police vault. Where this con
 | Question | Decision |
 | --- | --- |
 | Follow-up with reporters | **Anonymous message box**: the reporter and moderators exchange messages through the status code. No contact details are ever collected. |
-| Commendations for good police conduct | **In v1**, through the same protected form. |
+| Commendations for good police conduct | **In v1**, through the same protected form, and forwarded to the CRU and PSC. Named thanks go only through those forwards, never in public. |
 | Who receives forwarded reports | **The Police Complaint Response Unit (CRU) and the Police Service Commission (PSC) only.** No NGOs or other partners in v1. |
 | Live alerts | **None.** Patterns only, published with a delay. |
 
@@ -32,7 +32,7 @@ The form opens with one choice: **"Something went wrong"** or **"An officer did 
 Commendations follow the same rules as misconduct reports:
 - same privacy protections
 - same moderation
-- forwarded to the CRU and PSC (as a commendation)
+- forwarded to the CRU and PSC (as a commendation), with the officer's details when the reporter gave them, so recognition reaches the named officer through official channels
 - officer details never public
 
 They appear on the patterns page alongside misconduct.
@@ -163,7 +163,6 @@ In order. Sizes are rough part-time estimates (S under 1 day, M 1–3 days, L ab
 
 ## Open items
 
-- **Commendation wording:** no names published means commendations can't thank a specific officer publicly. Confirm that's acceptable, or decide whether the PSC forward is the place for named thanks (it already includes officer details when the reporter gave them).
 - **Who the two police moderators are**, and their safety training.
 - **The CRU and PSC channels** we'll forward through, and whether either will give us a contact for follow-ups.
 - **Accepting the monthly publishing and banded counts** recommended in section 5.
