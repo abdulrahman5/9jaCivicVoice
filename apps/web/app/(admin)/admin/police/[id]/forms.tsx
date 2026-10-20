@@ -251,3 +251,24 @@ export function OutcomeForm({
     </form>
   );
 }
+
+/** A report photo, blurred until the moderator chooses to look (docs/POLICE.md, section 3). */
+export function PolicePhoto({ src, index }: { src: string; index: number }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <figure className="m-0 flex flex-col gap-1.5">
+      <div className="overflow-hidden rounded-lg bg-fill">
+        {/* Plain img: a short-lived signed URL from the vault, not an optimisable asset. */}
+        <img
+          src={src}
+          alt={`Photo ${index + 1} from the reporter`}
+          className={`block h-auto w-full transition ${shown ? "" : "scale-110 blur-2xl"}`}
+          referrerPolicy="no-referrer"
+        />
+      </div>
+      <button type="button" className={secondaryButton} onClick={() => setShown((v) => !v)}>
+        {shown ? "Blur again" : `View photo ${index + 1}`}
+      </button>
+    </figure>
+  );
+}

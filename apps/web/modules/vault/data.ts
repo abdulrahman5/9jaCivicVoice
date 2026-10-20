@@ -68,7 +68,8 @@ export interface PoliceReportDetail {
   time_of_day: string | null;
   description: string;
   officer_details: string | null;
-  media_count: number;
+  /** Signed URLs for the report's photos, valid for 10 minutes. */
+  photos: string[];
   consent_to_forward: boolean;
   wants_legal_aid: boolean;
   status: PoliceStatus;
@@ -96,7 +97,8 @@ export async function openPoliceReport(reportId: string, moderatorId: string): P
   const r = rows?.[0];
   if (!r) return null;
 
-  const [forwards, messages, access] = await Promise.all([
+  const mediaKeys = (r.media_keys as string[] | null) ?? [];
+  const [forwards, messages, access, signed] = await Promise.all([
     vault
       .from("forwards")
       .select("recipient, channel, reference, outcome, forwarded_at, forwarded_by")
@@ -109,8 +111,11 @@ export async function openPoliceReport(reportId: string, moderatorId: string): P
       .eq("report_id", reportId)
       .order("created_at", { ascending: false })
       .limit(20),
+    mediaKeys.length
+      ? vault.storage.from("police-media").createSignedUrls(mediaKeys, 600)
+      : Promise.resolve({ data: [], error: null }),
   ]);
-  for (const res of [forwards, messages, access]) if (res.error) throw res.error;
+  for (const res of [forwards, messages, access, signed]) if (res.error) throw res.error;
 
   return {
     id: r.id as string,
@@ -124,7 +129,7 @@ export async function openPoliceReport(reportId: string, moderatorId: string): P
     time_of_day: r.time_of_day as string | null,
     description: r.description as string,
     officer_details: await openOfficerDetails(r.officer_details_sealed as string | null, env("vault").OFFICER_DETAILS_PRIVATE_KEY),
-    media_count: ((r.media_keys as string[] | null) ?? []).length,
+    photos: (signed.data ?? []).flatMap((p) => (p.signedUrl ? [p.signedUrl] : [])),
     consent_to_forward: r.consent_to_forward as boolean,
     wants_legal_aid: r.wants_legal_aid as boolean,
     status: r.status as PoliceStatus,
