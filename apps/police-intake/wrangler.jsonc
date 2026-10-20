@@ -11,12 +11,18 @@
   "upload_source_maps": false,
   "vars": {
     "VAULT_SUPABASE_URL": "http://127.0.0.1:55321",
-    "PUBLIC_SITE_URL": "http://localhost:3000"
+    "PUBLIC_SITE_URL": "http://localhost:3000",
+    // Cloudflare's always-pass test key for local development. Set the real one per environment.
+    "TURNSTILE_SITE_KEY": "1x00000000000000000000AA"
   }
   // Secrets (set with `wrangler secret put`, or .dev.vars locally):
   //   VAULT_SUPABASE_ANON_KEY     anon key of the vault project (can only call police.submit_report)
   //   OFFICER_DETAILS_PUBLIC_KEY  RSA-OAEP public key (base64 SPKI) for encrypting officer details
   //   STATUS_CODE_PEPPER          extra secret mixed into status-code hashes
+  //   STATUS_LOOKUP_KEY           HMAC key that turns a status code into its lookup value
+  //   TURNSTILE_SECRET_KEY        Turnstile secret; without it, submissions and messages are refused
+  //
+  // Changing STATUS_CODE_PEPPER or STATUS_LOOKUP_KEY makes every existing status code stop working.
   //
   // Rate limiting is a Cloudflare WAF rule on the route (configured in the dashboard),
   // so this code never needs to read the visitor's IP address.
