@@ -76,6 +76,7 @@ Keep `officer.pem` offline. Anyone who has it can read officer details.
 | `pnpm test` | Unit tests (Vitest) in every package |
 | `pnpm db:civic:reset` | Rebuild the local civic database from migrations + seed |
 | `pnpm db:civic:test` | Database tests (pgTAP) for the moderation functions |
+| `pnpm db:vault:test` | Database tests (pgTAP) for the police vault functions |
 | `pnpm --filter @civicvoice/web staff:create <email> "<name>" <role>` | Create a staff account (roles: `moderator`, `admin`, `police_moderator`); prints a one-time password |
 | `pnpm db:types` | Regenerate `packages/db/src/database.types.ts` from the local civic schema |
 

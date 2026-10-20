@@ -4,6 +4,7 @@ Changes made while building that differ from the architecture doc (19 Oct 2026).
 
 | Date | Decision | Why | Update the architecture doc? |
 | --- | --- | --- | --- |
+| 2026-10-20 | Police forwards are one row per recipient (`police.forwards`), so CRU and PSC outcomes are tracked separately. Rejected police reports get `closed_at`, so the 12-month purge covers them. | The spec tracks outcomes per recipient, and without `closed_at`, rejected reports would never be purged. | No |
 | 2026-10-20 | Police reporting v1 (docs/POLICE.md): an anonymous message box tied to the status code; commendations for good conduct; forwarding to the CRU and PSC only; patterns only, no live alerts. | Product decisions from the police-feature brainstorm. | Yes: PRD F5 |
 | 2026-10-20 | Status codes get a deterministic `status_lookup` (HMAC with a Worker secret) next to the salted hash, and grow from 4 to 6 words. | With a per-report salt, a code can't be matched to its report without re-hashing against every row. Codes now unlock a conversation, so 32 bits is too few. | Yes: Police vault controls |
 | 2026-10-20 | Police reports are marked "consistent", never "verified". | We can't prove an anonymous report true; the label shouldn't claim we did. | No |

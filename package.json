@@ -20,6 +20,7 @@
     "db:vault:start": "supabase start --workdir db/vault",
     "db:vault:stop": "supabase stop --workdir db/vault",
     "db:vault:reset": "supabase db reset --workdir db/vault",
+    "db:vault:test": "supabase test db --workdir db/vault",
     "db:types": "supabase gen types typescript --local --workdir db/civic --schema core,public_read,ops > packages/db/src/database.types.ts"
   },
   "devDependencies": {

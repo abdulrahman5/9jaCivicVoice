@@ -49,3 +49,4 @@ jobs:
         run: |
           supabase start --workdir db/vault -x studio,imgproxy,realtime,edge-runtime,logflare,vector,supavisor,mailpit,postgres-meta
           supabase db lint --workdir db/vault --level error --schema police
+          supabase test db --workdir db/vault
