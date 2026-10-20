@@ -6,9 +6,10 @@
  * text, and the key is wrapped with an RSA-OAEP public key. Only the admin
  * server holds the private key, so the Worker can encrypt but never decrypt.
  *
- * Status codes: four words (about 32 bits) shown once to the reporter. Only a
- * salted PBKDF2 hash is stored. Lookups are rate-limited at the edge, which
- * makes brute force impractical. TODO: move to Argon2id (WASM) before launch.
+ * Status codes: six words (48 bits) shown once to the reporter. Two values are
+ * stored: a lookup (HMAC with a Worker secret) that finds the report, and a
+ * salted PBKDF2 hash that must match before anything is returned. Lookups are
+ * rate-limited at the edge. TODO: move the hash to Argon2id (WASM) before launch.
  */
 
 const enc = new TextEncoder();
@@ -51,8 +52,8 @@ export async function unseal(sealed: SealedText, privateKey: CryptoKey): Promise
   return new TextDecoder().decode(plaintext);
 }
 
-// Exactly 256 short, distinct, easy-to-type English words → 8 bits each, 32 bits for four.
-const WORDS = (
+// Exactly 256 short, distinct, easy-to-type English words → 8 bits each, 48 bits for six.
+export const WORDS = (
   "able acid aged also area army away baby back ball band bank base bath bear beat bell belt best bird blow blue boat body " +
   "bone book boot born boss both bowl bulk burn bush busy cake call calm came camp card care cart case cash cast cell chat " +
   "chip city clay club coal coat code cold cook cool cope copy core cost crew crop dark data date dawn days deal dear debt " +
@@ -66,8 +67,10 @@ const WORDS = (
   "loud love luck made mail main make male many mark mass meal mean meat meet menu"
 ).split(" ");
 
+export const STATUS_CODE_WORDS = 6;
+
 export function generateStatusCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(4));
+  const bytes = crypto.getRandomValues(new Uint8Array(STATUS_CODE_WORDS));
   return Array.from(bytes, (b) => WORDS[b % WORDS.length]).join("-");
 }
 
@@ -78,6 +81,14 @@ export async function hashStatusCode(code: string, pepper: string, salt?: Uint8A
   ]);
   const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: s, iterations: 100_000 }, key, 256);
   return { salt: b64(s), hash: b64(bits) };
+}
+
+/** Deterministic lookup for a (normalised) status code: HMAC-SHA256 with a Worker secret. */
+export async function statusLookup(code: string, key: string): Promise<string> {
+  const hmacKey = await crypto.subtle.importKey("raw", enc.encode(key), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+  ]);
+  return b64(await crypto.subtle.sign("HMAC", hmacKey, enc.encode(code)));
 }
 
 export { b64, unb64 };
