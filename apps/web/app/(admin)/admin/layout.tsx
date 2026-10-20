@@ -23,6 +23,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin" className="rounded-lg px-2 py-2 text-ink no-underline hover:bg-fill">
             Moderation queue
           </Link>
+          {staff.role === "police_moderator" && (
+            <Link href="/admin/police" className="rounded-lg px-2 py-2 text-ink no-underline hover:bg-fill">
+              Police reports
+            </Link>
+          )}
         </nav>
         <div className="mt-auto flex flex-col gap-2 text-xs text-muted">
           <span>
