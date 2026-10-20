@@ -104,7 +104,7 @@ See the architecture doc's production readiness checklist. In short:
    - `worker_key` = `JOBS_SECRET`
    - `police_bridge_secret` = a random value
 3. In the **vault** project's Supabase Vault:
-   - `civic_ingest_url` = `https://<civic-ref>.supabase.co/rest/v1/rpc/ingest_police_patterns`
+   - `civic_rest_url` = `https://<civic-ref>.supabase.co/rest/v1`
    - `civic_anon_key`
    - `police_bridge_secret` = the same random value
 4. Create a Cloudflare Worker route for the police form, plus a WAF rate-limit rule on it. Set the Worker secrets with `wrangler secret put`.
