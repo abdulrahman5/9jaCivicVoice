@@ -1,6 +1,7 @@
 import { PoliceSubmission, ReporterMessage, StatusCode } from "@civicvoice/validation";
 import { generateStatusCode, hashStatusCode, importPublicKey, seal, statusLookup, unb64 } from "./crypto";
 import { FORM_HTML, FORM_JS, SHARED_CSS, STATUS_HTML, STATUS_JS, withSiteKey } from "./form";
+import { MAX_PHOTO_BYTES, stripJpegMetadata } from "./jpeg";
 import { gridCell } from "./privacy";
 import { verifyTurnstile } from "./turnstile";
 
@@ -111,17 +112,77 @@ function rpc(env: Env, fetchImpl: typeof fetch, name: string, args: Record<strin
   });
 }
 
-export async function handleSubmit(request: Request, env: Env, fetchImpl: typeof fetch = fetch): Promise<Response> {
-  const body = await readJson(request);
-  if (body instanceof Response) return body;
-  const { turnstileToken, ...fields } = body;
+const MAX_PHOTOS = 3;
 
+/**
+ * Reads a submission: JSON, or multipart/form-data with the report as JSON in a "report"
+ * field and up to three JPEG "photos". Photos are metadata-stripped here; nothing is stored yet.
+ */
+async function readSubmission(request: Request): Promise<{ fields: Record<string, unknown>; photos: Uint8Array[] } | Response> {
+  if (!request.headers.get("content-type")?.includes("multipart/form-data")) {
+    const body = await readJson(request);
+    return body instanceof Response ? body : { fields: body, photos: [] };
+  }
+  let form: FormData;
+  let fields: unknown;
+  try {
+    form = await request.formData();
+    fields = JSON.parse(String(form.get("report") ?? ""));
+  } catch {
+    return json({ error: "Invalid form data" }, 400);
+  }
+  if (!fields || typeof fields !== "object" || Array.isArray(fields)) return json({ error: "Invalid form data" }, 400);
+
+  const files = form.getAll("photos");
+  if (files.length > MAX_PHOTOS) return json({ error: `Add at most ${MAX_PHOTOS} photos.` }, 422);
+  const photos: Uint8Array[] = [];
+  for (const file of files) {
+    if (typeof file === "string" || file.size > MAX_PHOTO_BYTES) {
+      return json({ error: "A photo is too large. Remove it and try again." }, 422);
+    }
+    const stripped = stripJpegMetadata(new Uint8Array(await file.arrayBuffer()));
+    if (!stripped) return json({ error: "A photo couldn't be read. Remove it and try again." }, 422);
+    photos.push(stripped);
+  }
+  return { fields: fields as Record<string, unknown>, photos };
+}
+
+/** Stores one photo in the vault's private bucket. The anon key can add objects, never read them. */
+async function storePhoto(env: Env, fetchImpl: typeof fetch, bytes: Uint8Array): Promise<string | null> {
+  const key = `${crypto.randomUUID()}.jpg`;
+  const res = await fetchImpl(`${env.VAULT_SUPABASE_URL}/storage/v1/object/police-media/${key}`, {
+    method: "POST",
+    headers: {
+      apikey: env.VAULT_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${env.VAULT_SUPABASE_ANON_KEY}`,
+      "Content-Type": "image/jpeg",
+      "x-upsert": "false",
+    },
+    body: bytes,
+  });
+  return res.ok ? key : null;
+}
+
+export async function handleSubmit(request: Request, env: Env, fetchImpl: typeof fetch = fetch): Promise<Response> {
+  const submission = await readSubmission(request);
+  if (submission instanceof Response) return submission;
+  const { turnstileToken, ...fields } = submission.fields;
+
+  // Photo keys come only from photos stored here, never from the client.
+  if ("mediaKeys" in fields) return json({ error: "Please check the form and try again." }, 422);
   const parsed = PoliceSubmission.safeParse(fields);
   if (!parsed.success) return json({ error: "Please check the form and try again." }, 422);
   if (!(await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, fetchImpl))) {
     return json({ error: BOT_CHECK }, 403);
   }
   const report = parsed.data;
+
+  const mediaKeys: string[] = [];
+  for (const photo of submission.photos) {
+    const key = await storePhoto(env, fetchImpl, photo);
+    if (!key) return json({ error: "We couldn't save your photos. Please try again in a few minutes." }, 502);
+    mediaKeys.push(key);
+  }
 
   const officerDetails = report.officerDetails
     ? JSON.stringify(await seal(report.officerDetails, await importPublicKey(env.OFFICER_DETAILS_PUBLIC_KEY)))
@@ -140,7 +201,7 @@ export async function handleSubmit(request: Request, env: Env, fetchImpl: typeof
     p_occurred_on: report.occurredOn ?? null,
     p_description: report.description,
     p_officer_details_sealed: officerDetails,
-    p_media_keys: report.mediaKeys,
+    p_media_keys: mediaKeys,
     p_consent_to_forward: report.consentToForward,
     p_wants_legal_aid: report.wantsLegalAid,
     p_status_code_salt: salt,

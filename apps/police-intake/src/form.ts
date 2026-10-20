@@ -4,8 +4,10 @@
  * browser storage. The only outside script is Cloudflare Turnstile, loaded by the
  * page's own JS. Keep the total under 50 KB.
  *
- * TODO (before launch): photo upload with on-device blur and EXIF strip via a
- * signed vault-bucket URL (docs/POLICE.md task 9).
+ * Photos are processed here, on the phone, before anything is sent: resized to 1600 px,
+ * faces (where the browser can detect them) and every area the reporter taps are
+ * pixelated then blurred, and the result is re-encoded as JPEG under ~300 KB, which drops
+ * all metadata. Same algorithm and limits as packages/media; the Worker strips metadata again.
  */
 
 const SITE_KEY_SLOT = "__TURNSTILE_SITE_KEY__";
@@ -70,6 +72,13 @@ export const FORM_HTML = `${HEAD("Protected report")}
     <label>Unit, vehicle number or name tag <small>Optional. Only if you saw it safely. Never shown publicly.</small>
       <input name="officerDetails" maxlength="300">
     </label>
+    <fieldset class="photos">
+      <legend>Photos <small>Optional, up to 3</small></legend>
+      <p class="hint">Only add photos if taking them was safe. Before sending, blur every face, number plate and name tag: tap on them in the photo. Tap a blurred area again to undo.</p>
+      <div id="photo-list"></div>
+      <label class="secondary-button" id="add-photo">Add a photo<input type="file" accept="image/*" hidden></label>
+      <label class="check" id="blur-confirm" hidden><input type="checkbox" name="blurConfirmed"> I've blurred every face, number plate and name tag in my photos</label>
+    </fieldset>
     <label class="check"><input type="checkbox" name="consentToForward" checked> Send to the Police Complaint Response Unit and the Police Service Commission (without anything that identifies me)</label>
     <label class="check" data-kind="misconduct"><input type="checkbox" name="wantsLegalAid"> Connect me with free legal aid</label>
     <ul class="promises">
@@ -145,7 +154,12 @@ button:disabled{opacity:.5}button.secondary{background:#fff;color:var(--ink);bor
 .messages{list-style:none;padding:0;margin:12px 0;display:flex;flex-direction:column;gap:8px}
 .messages li{padding:10px 12px;border-radius:12px;max-width:85%;white-space:pre-wrap;word-break:break-word}
 .messages .reporter{background:var(--police-soft);align-self:flex-end}.messages .moderator{background:#fff;border:1px solid var(--line)}
-.messages small{display:block;color:var(--muted);font-size:12px;margin-top:4px}`;
+.messages small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.secondary-button{display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--line);border-radius:12px;background:#fff;font-weight:600;cursor:pointer}
+.photo{display:flex;flex-direction:column;gap:6px;margin:0}.photo canvas{width:100%;height:auto;border-radius:10px;touch-action:manipulation;cursor:crosshair}
+.photo figcaption{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.photo button{min-height:36px;padding:0 12px;background:#fff;color:var(--ink);border:1px solid var(--line);font-size:13px}`;
 
 /** Turnstile widget helper shared by both pages. Loads Cloudflare's script only when a site key is set. */
 const TURNSTILE_JS = `var TS=(function(){
@@ -177,6 +191,59 @@ document.getElementById('locate').addEventListener('click',function(e){
   navigator.geolocation.getCurrentPosition(function(p){coords={lat:p.coords.latitude,lng:p.coords.longitude};e.target.textContent='Approximate location added ✓';},
   function(){e.target.textContent='Location unavailable (optional)';},{timeout:15000});
 });
+var MAX_SIDE=1600,TARGET_BYTES=300*1024,photos=[],list=document.getElementById('photo-list'),addPhoto=document.getElementById('add-photo'),
+  blurConfirm=document.getElementById('blur-confirm'),picker=addPhoto.querySelector('input');
+function blurArea(ctx,r){
+  // Pixelate first, then blur: a plain blur can sometimes be partially reversed.
+  var b=Math.max(8,Math.round(Math.min(r.w,r.h)/6)),c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(r.w/b));c.height=Math.max(1,Math.round(r.h/b));
+  c.getContext('2d').drawImage(ctx.canvas,r.x,r.y,r.w,r.h,0,0,c.width,c.height);
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.filter='blur(4px)';ctx.drawImage(c,0,0,c.width,c.height,r.x,r.y,r.w,r.h);ctx.restore();
+}
+function paint(p){var ctx=p.canvas.getContext('2d');ctx.drawImage(p.img,0,0,p.canvas.width,p.canvas.height);p.regions.forEach(function(r){blurArea(ctx,r);});}
+function pad(r,W,H){var px=r.w*0.2,py=r.h*0.2,x=Math.max(0,r.x-px),y=Math.max(0,r.y-py);return{x:x,y:y,w:Math.min(W-x,r.w+2*px),h:Math.min(H-y,r.h+2*py)};}
+function refreshPhotos(){addPhoto.hidden=photos.length>=3;blurConfirm.hidden=!photos.length;if(!photos.length)blurConfirm.querySelector('input').checked=false;}
+function addPhotoFrom(file){
+  createImageBitmap(file).then(function(img){
+    var s=Math.min(1,MAX_SIDE/Math.max(img.width,img.height)),canvas=document.createElement('canvas');
+    canvas.width=Math.round(img.width*s);canvas.height=Math.round(img.height*s);
+    var p={img:img,canvas:canvas,regions:[]},fig=document.createElement('figure'),cap=document.createElement('figcaption'),
+      note=document.createElement('span'),remove=document.createElement('button');
+    fig.className='photo';note.textContent='Tap to blur. Nothing is sent until you submit.';remove.type='button';remove.textContent='Remove photo';
+    remove.addEventListener('click',function(){photos.splice(photos.indexOf(p),1);fig.remove();img.close();refreshPhotos();});
+    canvas.addEventListener('click',function(ev){
+      var k=canvas.width/canvas.clientWidth,x=ev.offsetX*k,y=ev.offsetY*k,hit=-1;
+      p.regions.forEach(function(r,i){if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)hit=i;});
+      if(hit>=0)p.regions.splice(hit,1);
+      else{var d=Math.min(canvas.width,canvas.height)*0.18;p.regions.push({x:Math.max(0,x-d/2),y:Math.max(0,y-d/2),w:d,h:d});}
+      paint(p);
+    });
+    cap.appendChild(note);cap.appendChild(remove);fig.appendChild(canvas);fig.appendChild(cap);list.appendChild(fig);
+    photos.push(p);paint(p);refreshPhotos();
+    // Automatic face blurring where the browser offers it; the reporter checks and adds the rest.
+    if('FaceDetector' in window){
+      new window.FaceDetector({fastMode:false}).detect(img).then(function(faces){
+        faces.forEach(function(f){var b=f.boundingBox;p.regions.push(pad({x:b.x*s,y:b.y*s,w:b.width*s,h:b.height*s},canvas.width,canvas.height));});
+        if(faces.length)note.textContent=faces.length+(faces.length>1?' faces':' face')+' blurred automatically. Check, and tap anything else.';
+        paint(p);
+      },function(){});
+    }
+  },function(){show(err,"That photo couldn't be opened. Try another.");});
+}
+picker.addEventListener('change',function(){if(picker.files[0])addPhotoFrom(picker.files[0]);picker.value='';});
+function photoBlob(p){
+  return new Promise(function(done){
+    (function tryQuality(q){p.canvas.toBlob(function(b){if(b.size>TARGET_BYTES&&q>0.4)tryQuality(q-0.12);else done(b);},'image/jpeg',q);})(0.82);
+  });
+}
+function send(body){
+  if(!photos.length)return post('/api/submit',body);
+  return Promise.all(photos.map(photoBlob)).then(function(blobs){
+    var fd=new FormData();fd.append('report',JSON.stringify(body));blobs.forEach(function(b){fd.append('photos',b,'photo.jpg');});
+    return fetch('/api/submit',{method:'POST',body:fd,credentials:'omit',referrerPolicy:'no-referrer'})
+      .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};},function(){return{ok:false,d:{}};});},function(){return{ok:false,d:{error:'No connection. Check your internet and try again.'}};});
+  });
+}
 form.addEventListener('submit',function(e){
   e.preventDefault();show(err,'');
   var f=new FormData(form),kind=f.get('kind'),type=f.get('incidentType');
@@ -186,9 +253,11 @@ form.addEventListener('submit',function(e){
   if(f.get('timeOfDay'))body.timeOfDay=f.get('timeOfDay');
   if(f.get('officerDetails'))body.officerDetails=f.get('officerDetails');
   if(coords){body.lat=coords.lat;body.lng=coords.lng;}
+  if(photos.length&&!f.get('blurConfirmed')){show(err,'Check your photos, then tick the box to confirm faces, number plates and name tags are blurred.');return;}
   submit.disabled=true;
-  post('/api/submit',body).then(function(x){
+  send(body).then(function(x){
     if(!x.ok){TS.reset();show(err,x.d.error||'Something went wrong. Please try again.');return;}
+    photos.forEach(function(p){p.img.close();});photos=[];list.textContent='';
     form.reset();form.hidden=true;document.getElementById('code').textContent=x.d.statusCode;document.getElementById('done').hidden=false;
   });
 });

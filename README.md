@@ -107,6 +107,7 @@ See the architecture doc's production readiness checklist. In short:
    - `civic_rest_url` = `https://<civic-ref>.supabase.co/rest/v1`
    - `civic_anon_key`
    - `police_bridge_secret` = the same random value
+   - `vault_storage_url` = `https://<vault-ref>.supabase.co/storage/v1` and `vault_service_role_key` (deletes purged reports' photos)
 4. Create a Cloudflare Worker route for the police form, plus a WAF rate-limit rule on it. Set the Worker secrets with `wrangler secret put`.
 5. Create a Vercel project for `apps/web` with the production env vars, and the GitHub `production` environment (with required reviewers) holding the secrets that `release.yml` lists.
 6. Load real GRID3 LGA and ward boundaries for Lagos and FCT into `core.lgas` and `core.wards`. The seed only has fake boxes.

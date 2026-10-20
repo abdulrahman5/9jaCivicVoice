@@ -8,7 +8,7 @@ import { POLICE_RECIPIENTS } from "@civicvoice/validation";
 import { CITY_LABELS, OUTCOME_LABELS, POLICE_TYPE_LABELS, RECIPIENT_LABELS, WHEN_LABELS } from "@/modules/vault/labels";
 import { buildForwardingPack } from "@/modules/vault/pack";
 import { RECIPIENT_CONTACTS } from "@/modules/vault/recipients";
-import { ForwardPanel, ForwardTextForm, OutcomeForm, RejectForm, ReplyForm, StatusButton } from "./forms";
+import { ForwardPanel, ForwardTextForm, OutcomeForm, PolicePhoto, RejectForm, ReplyForm, StatusButton } from "./forms";
 
 export const metadata: Metadata = { title: "Police report" };
 
@@ -83,9 +83,16 @@ export default async function PoliceReportPage({ params }: { params: Promise<{ i
               {report.kind === "misconduct" && (
                 <Fact label="Legal aid">{report.wants_legal_aid ? "Asked for legal aid" : "Not requested"}</Fact>
               )}
-              <Fact label="Photos">{report.media_count ? `${report.media_count} (viewing comes with photo upload)` : "None"}</Fact>
+              <Fact label="Photos">{report.photos.length ? `${report.photos.length}, blurred below until you view them` : "None"}</Fact>
             </dl>
             <p className="whitespace-pre-wrap">{report.description || <em className="text-muted">No text</em>}</p>
+            {report.photos.length > 0 && (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
+                {report.photos.map((src, i) => (
+                  <PolicePhoto key={src} src={src} index={i} />
+                ))}
+              </div>
+            )}
             {report.officer_details && (
               <details className="rounded-lg bg-fill p-2 text-sm">
                 <summary className="cursor-pointer font-semibold">Show officer details</summary>

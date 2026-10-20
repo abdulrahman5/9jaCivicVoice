@@ -5,6 +5,7 @@ import { StatusCode } from "@civicvoice/validation";
 import { b64, generateStatusCode, hashStatusCode, importPublicKey, seal, statusLookup, unb64, unseal, WORDS } from "./crypto";
 import worker, { handleMessage, handleStatus, handleSubmit, type Env } from "./index";
 import { cellCentre, gridCell } from "./privacy";
+import { MAX_PHOTO_BYTES, stripJpegMetadata } from "./jpeg";
 import { FORM_HTML, FORM_JS, SHARED_CSS, STATUS_HTML, STATUS_JS, withSiteKey } from "./form";
 
 async function keyPair() {
@@ -278,6 +279,109 @@ describe("pages", () => {
   it("keeps the status code out of URLs and browser storage", () => {
     for (const js of [FORM_JS, STATUS_JS]) expect(js).not.toMatch(/localStorage|sessionStorage|indexedDB|document\.cookie/);
     expect(STATUS_JS).not.toMatch(/[?&]code=|location\.(search|hash)/);
+  });
+});
+
+/** A tiny structurally valid JPEG: SOI, APP0 (JFIF), optional metadata segments, DQT, SOS + data, EOI. */
+function jpeg(extraSegments: number[][] = []) {
+  const seg = (marker: number, payload: number[]) => [0xff, marker, (payload.length + 2) >> 8, (payload.length + 2) & 0xff, ...payload];
+  const text = (t: string) => [...new TextEncoder().encode(t)];
+  return new Uint8Array([
+    0xff, 0xd8,
+    ...seg(0xe0, text("JFIF\0")),
+    ...extraSegments.flat(),
+    ...seg(0xdb, [0, 1, 2, 3]),
+    ...seg(0xda, [1, 1, 0, 0, 63, 0]),
+    0x12, 0x34, 0x56,
+    0xff, 0xd9,
+  ]);
+}
+const exif = () => {
+  const payload = [...new TextEncoder().encode("Exif\0\0GPS 6.6018N 3.3515E Phone XYZ")];
+  return [0xff, 0xe1, (payload.length + 2) >> 8, (payload.length + 2) & 0xff, ...payload];
+};
+const xmpAndComment = () => {
+  const xmp = [...new TextEncoder().encode("http://ns.adobe.com/xap/1.0/ <x:xmpmeta>")];
+  const com = [...new TextEncoder().encode("taken by Ada")];
+  return [
+    0xff, 0xe1, (xmp.length + 2) >> 8, (xmp.length + 2) & 0xff, ...xmp,
+    0xff, 0xfe, (com.length + 2) >> 8, (com.length + 2) & 0xff, ...com,
+  ];
+};
+const asText = (b: Uint8Array) => new TextDecoder("latin1").decode(b);
+
+describe("stripJpegMetadata", () => {
+  it("removes EXIF/GPS, XMP and comments, and keeps the image data", () => {
+    const out = stripJpegMetadata(jpeg([exif(), xmpAndComment()]))!;
+    expect(asText(out)).not.toMatch(/Exif|GPS|xmpmeta|Ada/);
+    expect(asText(out)).toContain("JFIF");
+    expect(out).toEqual(jpeg());
+  });
+
+  it("refuses anything that isn't a well-formed JPEG", () => {
+    expect(stripJpegMetadata(new TextEncoder().encode("GIF89a..."))).toBeNull();
+    expect(stripJpegMetadata(jpeg().subarray(0, 12))).toBeNull();
+    expect(stripJpegMetadata(new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0xff, 0xff]))).toBeNull();
+  });
+});
+
+describe("photos with a submission", () => {
+  const report = {
+    city: "lagos",
+    incidentType: "money_demanded",
+    place: "Third Mainland Bridge",
+    when: "today",
+    consentToForward: true,
+    turnstileToken: "token",
+  };
+  const multipart = (fields: unknown, photos: Uint8Array[]) => {
+    const fd = new FormData();
+    fd.append("report", JSON.stringify(fields));
+    for (const p of photos) fd.append("photos", new Blob([p], { type: "image/jpeg" }), "photo.jpg");
+    return new Request("https://safe.example/api/submit", { method: "POST", body: fd });
+  };
+
+  it("stores metadata-free photos under random names and links them to the report", async () => {
+    const up = upstream();
+    const res = await handleSubmit(multipart(report, [jpeg([exif()]), jpeg()]), await env(), up.fetchImpl);
+    expect(res.status).toBe(201);
+
+    const uploads = up.calls.filter((c) => c.url.includes("/storage/v1/object/police-media/"));
+    expect(uploads).toHaveLength(2);
+    for (const u of uploads) expect(u.url).toMatch(/police-media\/[0-9a-f-]{36}\.jpg$/);
+    const keys = up.rpcBody("submit_report").p_media_keys as string[];
+    expect(keys).toEqual(uploads.map((u) => u.url.split("/").at(-1)));
+    // The body upstream is the stripped bytes, with no GPS text in it.
+    expect(up.calls.map((c) => c.body).join("")).not.toContain("GPS");
+  });
+
+  it("refuses non-JPEGs, oversized photos and more than three", async () => {
+    const send = async (photos: Uint8Array[]) => (await handleSubmit(multipart(report, photos), await env(), upstream().fetchImpl)).status;
+    expect(await send([new TextEncoder().encode("not an image")])).toBe(422);
+    expect(await send([new Uint8Array(MAX_PHOTO_BYTES + 1)])).toBe(422);
+    expect(await send([jpeg(), jpeg(), jpeg(), jpeg()])).toBe(422);
+  });
+
+  it("never accepts photo keys from the client", async () => {
+    const res = await handleSubmit(
+      multipart({ ...report, mediaKeys: ["0b1c2d3e-4f50-4617-8899-aabbccddeeff.jpg"] }, []),
+      await env(),
+      upstream().fetchImpl,
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("checks Turnstile before storing anything, and saves no report if a photo fails", async () => {
+    const blocked = upstream({}, false);
+    expect((await handleSubmit(multipart(report, [jpeg()]), await env(), blocked.fetchImpl)).status).toBe(403);
+    expect(blocked.calls.some((c) => c.url.includes("/storage/"))).toBe(false);
+
+    const failing = upstream();
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).includes("/storage/") ? new Response("no", { status: 500 }) : failing.fetchImpl(input, init),
+    ) as unknown as typeof fetch;
+    expect((await handleSubmit(multipart(report, [jpeg()]), await env(), fetchImpl)).status).toBe(502);
+    expect(failing.calls.some((c) => c.url.endsWith("/rpc/submit_report"))).toBe(false);
   });
 });
 
