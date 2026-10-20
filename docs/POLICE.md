@@ -16,7 +16,7 @@ Builds on PRD feature F5 and the architecture doc's police vault. Where this con
 - **Intake Worker:** an anonymous form on its own Cloudflare Worker, with logging off, and the visitor's IP and user-agent are never read.
 - **Vault database:** the Worker's key can only insert, and every moderator read is written to `police.access_log`.
 - **Data protection:** officer details are encrypted so only the admin server can open them; status codes are stored as hashes; locations are snapped to a ~1 km grid.
-- **The bridge:** a nightly job pushes aggregates (cells with 3 or more reports, at least 48 hours old) to `public_read.police_patterns`.
+- **The bridge:** a nightly job pushes aggregates for completed months (cells with 3 or more reports, as count bands) and forwarding totals to `public_read`.
 
 Nothing reads back out of the vault yet: no moderation, no forwarding, no public page.
 
@@ -111,16 +111,18 @@ Forwarding outcome is a separate field (below), so "forwarded, no response" stil
 
 Public page at `/police` in the web app. It reads `public_read.police_patterns` and the forwarding totals:
 
-- a map of ~1 km cells, shaded by count, filterable by kind and type
+- a map of ~1 km cells, shaded by count band, filterable by kind and type
 - trend by month
 - forwarding outcomes by recipient
 - a method box: what's counted, the 3-report minimum, the delay, and why individual reports are never shown
 
-**Recommended change (safety).** The bridge currently rewrites the current month every night. Someone watching the counts day by day could see a cell go from 3 to 4 and know a report was filed there about two days earlier. To close that:
-- publish a month **only after it ends** (plus the 48-hour delay), and
-- show counts in **bands** (3–5, 6–10, 11–25, 25+) rather than exact numbers.
+**Decided (20 Oct 2026): completed months, counts as bands.** A nightly rewrite of the current month would let someone watching day by day see a cell go from 3 to 4 and date a report to about two days earlier. So:
+- a month is published **only after it ends** in Lagos time, plus 48 hours
+- counts leave the vault only as **bands**: 3–5, 6–10, 11–25, 26+
+- the civic side keeps the **first copy** of each month and ignores later pushes, so published figures never change
+- forwarding totals (about the institutions, not reporters) are refreshed nightly for the last 6 months, so late acknowledgements count
 
-That means patterns lag by up to a month. You accepted no live alerts, so this fits, but it's a real trade-off.
+Patterns lag by up to a month.
 
 **Optional field:** a time-of-day bucket (morning, afternoon, evening, night) makes patterns like "mostly 6–9pm" possible without much identifying power. Add it to the form, and publish it only once a cell has 10 or more reports.
 
