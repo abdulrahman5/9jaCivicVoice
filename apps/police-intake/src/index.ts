@@ -101,6 +101,8 @@ export async function handleSubmit(request: Request, env: Env, fetchImpl: typeof
       p_wants_legal_aid: report.wantsLegalAid,
       p_status_code_salt: salt,
       p_status_code_hash: hash,
+      p_kind: report.kind,
+      p_time_of_day: report.timeOfDay ?? null,
     }),
   });
 

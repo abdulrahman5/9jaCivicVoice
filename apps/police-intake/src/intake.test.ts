@@ -97,6 +97,16 @@ describe("handleSubmit", () => {
     expect(sent).not.toContain('"6.5');
   });
 
+  it("passes the report kind and time of day to the vault", async () => {
+    const fetchMock = vi.fn(async (..._args: Parameters<typeof fetch>) => new Response("{}", { status: 200 }));
+    const commendation = { ...valid, kind: "commendation", incidentType: "helped_me", timeOfDay: "night" };
+    const res = await handleSubmit(request(commendation), await env(), fetchMock as unknown as typeof fetch);
+
+    expect(res.status).toBe(201);
+    const payload = JSON.parse((fetchMock.mock.calls[0]![1] as RequestInit).body as string);
+    expect(payload).toMatchObject({ p_kind: "commendation", p_incident_type: "helped_me", p_time_of_day: "night" });
+  });
+
   it("rejects unexpected fields such as contact details", async () => {
     const res = await handleSubmit(request({ ...valid, phone: "+2348031234567" }), await env(), vi.fn());
     expect(res.status).toBe(422);
