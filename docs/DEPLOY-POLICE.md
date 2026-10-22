@@ -14,6 +14,17 @@ Once those are done, you set `POLICE_LAUNCH_GATE_PASSED`.
 
 You need: the preview web app already running ([PREVIEW.md](PREVIEW.md)), a Cloudflare account, and `openssl` on your computer.
 
+### Why Cloudflare
+
+The web app runs on Vercel and Supabase, but the police form runs on Cloudflare. This was planned from the start (architecture doc, decisions D2 and D8); it's only needed once the police form is deployed.
+
+- **Logging can be switched off completely.** Workers logs and Logpush are off, and the form's code never reads the visitor's IP address. Vercel and Supabase both keep request logs we can't fully turn off, and those would record reporters' IPs.
+- **Rate limiting happens at the edge.** A WAF rule blocks abuse by IP before the request reaches our code, so the code still never sees the IP.
+- **Turnstile comes from the same provider,** so the bot check adds no new party that sees reporters.
+- **The free plan covers it.**
+
+Moving the police form to Vercel or a Supabase Edge Function would work technically, but reporters' IP addresses would then sit in another provider's logs, which weakens the main promise to police reporters.
+
 ## 1. Generate the secrets (on your computer)
 
 ```sh
