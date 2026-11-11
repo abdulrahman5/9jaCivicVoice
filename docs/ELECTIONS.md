@@ -155,6 +155,10 @@ A few moderators per LGA means **thousands of volunteers**, so moderation needs 
 | INEC PDFs | 2015 per-state directories (old 119,973 units); 2021 counts by state | Out of date; counts only |
 | CredibleVoteNG | Reported free API of all units, launched in 2026 | URL, coverage and licence not yet confirmed |
 
+**Import tool:** `packages/election-data`, run by the **Election polling units** workflow (Actions tab), which crawls INEC's portal, checks the result against the IReV-derived list, keeps the snapshot as a 30-day workflow artifact, and loads it. The same commands run locally (see `packages/election-data/src/cli.ts`).
+
+**What the first check found** (on the Oct 2026 copy): the portal and the IReV list agree on every one of the 176,846 codes and on each state's count. The portal lists one ward twice (Benue, Gwer East, ward 09, one copy empty), which the importer merges. About 1.5% of unit names differ between the two, mostly spelling and fuller descriptions; the portal's are newer and win.
+
 **Import plan:**
 1. Write our own importer for INEC's CVR locator, so INEC is the source of record. Use the Oct 2026 scrape to build and test it, and cross-check counts and codes against the IReV-derived CSV.
 2. Run the importer after the final register (15 Dec 2026), and again in the week before each polling day. Changes are applied as inserts and updates, never deletes, so existing reports keep their unit.

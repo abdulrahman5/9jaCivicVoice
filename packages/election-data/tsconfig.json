@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The CLI runs as TypeScript under Node's type stripping, which needs explicit .ts imports.
+    "allowImportingTsExtensions": true,
+    "types": ["node"]
+  },
+  "include": ["src"]
+}

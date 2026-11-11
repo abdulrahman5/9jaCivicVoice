@@ -1,0 +1,118 @@
+name: Election polling units
+
+# Imports INEC's polling-unit list into the election schema (docs/ELECTIONS.md, task E2):
+# crawls INEC's CVR polling-unit locator, checks the result against an IReV-derived list,
+# keeps the snapshot as a workflow artifact (it is not committed: INEC publishes no terms
+# for this data), and loads it. Loading inserts and updates; it never deletes.
+#
+# Run after INEC's final register (due 15 Dec 2026) and in the week before each polling day.
+# Coordinates: "missing" asks INEC only for units the database doesn't have a point for,
+# which keeps a full run to well under an hour; "all" can take hours, so run it per state.
+#
+# This repo is public, so these logs are public: no step may print a secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Database to load
+        type: choice
+        options: [preview, production]
+        default: preview
+      states:
+        description: INEC state codes, comma-separated (e.g. 24,37). Empty for all 37.
+        type: string
+        default: ""
+      coordinates:
+        description: Ask INEC for coordinates
+        type: choice
+        options: [missing, skip, all]
+        default: missing
+      deactivate_missing:
+        description: Mark units INEC no longer lists as inactive (full crawls only)
+        type: boolean
+        default: false
+
+concurrency:
+  group: election-import-${{ inputs.target }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    timeout-minutes: 350
+    env:
+      # preview: the variables from docs/PREVIEW.md; production: CIVIC_SUPABASE_URL and CIVIC_SERVICE_ROLE_KEY.
+      SUPABASE_URL: ${{ vars.CIVIC_SUPABASE_URL || vars.PREVIEW_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CIVIC_SERVICE_ROLE_KEY || secrets.PREVIEW_SERVICE_ROLE_KEY }}
+      STATES: ${{ inputs.states }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check configuration
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::Set the database URL and service role key in the '${{ inputs.target }}' environment (see the top of this workflow)."
+            exit 1
+          fi
+          if [ "${{ inputs.deactivate_missing }}" = "true" ] && [ -n "$STATES" ]; then
+            echo "::error::Deactivating missing units needs a full crawl: leave 'states' empty."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @civicvoice/election-data...
+      - run: pnpm --filter @civicvoice/election-data test
+
+      - name: Crawl INEC's polling-unit locator
+        working-directory: packages/election-data
+        run: |
+          args=(--out "$RUNNER_TEMP/snapshot.json" --coordinates "${{ inputs.coordinates }}")
+          if [ -n "$STATES" ]; then args+=(--states "$STATES"); fi
+          node src/cli.ts crawl "${args[@]}"
+
+      - name: Check the snapshot
+        working-directory: packages/election-data
+        run: |
+          # An independent, IReV-derived list (Nov 2023), pinned to a commit. A sanity check only.
+          curl -fsSL -o "$RUNNER_TEMP/irev.csv" \
+            https://raw.githubusercontent.com/Emeka-Onwuepe/Polling_Units_in_Nigeria/4e1b9d78175e63014ce08aa39d746e51e0cd99b9/Nigeria_polling_units.csv
+          min=1
+          if [ -z "$STATES" ]; then min=170000; fi
+          node src/cli.ts check "$RUNNER_TEMP/snapshot.json" --against "$RUNNER_TEMP/irev.csv" --min-units "$min" | tee "$RUNNER_TEMP/check.json"
+
+      - name: Keep the snapshot (30 days)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: polling-units-${{ inputs.target }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/snapshot.json
+            ${{ runner.temp }}/check.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Load
+        working-directory: packages/election-data
+        run: |
+          args=()
+          if [ "${{ inputs.deactivate_missing }}" = "true" ]; then args+=(--deactivate-missing); fi
+          node src/cli.ts load "$RUNNER_TEMP/snapshot.json" "${args[@]}" | tee "$RUNNER_TEMP/load.json"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Polling units loaded into ${{ inputs.target }}"
+            echo '```json'
+            jq '{counts, notes, crossCheck: (.crossCheck | {ours, theirs, onlyOursCount, onlyTheirsCount, nameDifferences, stateDifferences})}' "$RUNNER_TEMP/check.json"
+            cat "$RUNNER_TEMP/load.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
