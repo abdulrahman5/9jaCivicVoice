@@ -1,0 +1,22 @@
+{
+  "name": "@civicvoice/election-data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Imports INEC's polling-unit list into the election schema (docs/ELECTIONS.md, task E2).",
+  "bin": {
+    "election-data": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "cli": "node src/cli.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "vitest": "^5.0.5"
+  }
+}
