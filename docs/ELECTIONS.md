@@ -11,10 +11,16 @@ Citizens report what happens at their polling unit on election day. Reports roll
 | Moderation | **Every state and the FCT**, ideally a few moderators per LGA (roughly 2,000 or more people). |
 | Partners | Planned: citizen observation groups and others. v1 makes verified data exportable to them. |
 
+**Polling days** (INEC's revised timetable of 26–27 Feb 2026, as reported; confirm on INEC's site):
+- **Saturday 16 January 2027:** presidential and National Assembly
+- **Saturday 6 February 2027:** governorship and state Houses of Assembly
+
+INEC has publicly ruled out postponement. The law is now the **Electoral Act 2026**, signed 18 Feb 2026, which repealed the 2022 Act.
+
 ## Principles
 
 - **Neutral.** We report process and incidents, never who's winning. Party or candidate names appear only as a reporter alleged them, and only after moderation.
-- **Ballot secrecy.** The form tells people never to photograph a marked ballot. Photos are for queues, materials, damage and posted notices.
+- **Ballot secrecy.** The form tells people never to photograph a marked ballot or anyone in the voting cubicle (INEC bars phones there). Photos are for queues, materials, damage and posted result sheets.
 - **Reporter safety.** Reports are anonymous by default; a phone number is optional and only for WhatsApp replies. Faces in photos are blurred on the phone, using the police photo pipeline.
 - **Fast but labelled.** Election reporting is only useful live, so counts publish within minutes. Every figure says how sure we are: reported, corroborated, or verified by a moderator.
 - **No pinpointing danger.** Violence and intimidation never show below ward level in public, so a report can't steer people to, or expose, a specific polling unit.
@@ -23,9 +29,9 @@ Citizens report what happens at their polling unit on election day. Reports roll
 
 INEC's hierarchy is **state → LGA → registration area (ward) → polling unit**, with polling-unit codes in the form `SS-LL-WW-PPP` (state, LGA, ward, unit).
 
-- **Scale:** ~176,846 polling units, 8,809 wards and 774 LGAs (to be confirmed against the source chosen below).
+- **Scale:** about 176,846 polling units, 8,809 wards and 774 LGAs. Never hard-code the count: in Nov 2026, INEC was reported to have added 453 units (giving 177,299) after new constituencies were created in Kogi, Benue and Delta. The final certified register is due 15 Dec 2026.
 - **Storage:** reference tables in a new `election` schema, keyed by INEC code. These are separate from `core.lgas`, which holds map boundaries for the civic pilot.
-- **Elections:** a general election is two polling days (presidential and National Assembly, then governorship and state assembly). Each is an `election` row, so reports, queues and the public view are per day.
+- **Elections:** each polling day is an `election` row, so reports, queues and the public view are per day.
 
 **Data source:** see "Polling unit data" below.
 
@@ -47,12 +53,15 @@ Grouped by stage of the day, each with a severity that drives the moderation que
 | Voting | Underage or unregistered voting | medium |
 | Voting | Polling unit not accessible (disability, elderly, pregnant women) | medium |
 | Voting | Security agents interfering | high |
+| Opening | Polling unit moved without notice | medium |
+| Voting | Voting closed early | high |
 | Counting | Counting disrupted or done away from the polling unit | critical |
+| Counting | Pre-filled or tampered result sheet seen | critical |
 | Counting | Result sheet (EC8A) not posted at the polling unit | high |
 | Any | Other | medium |
 | Any | **All went smoothly** (a positive report, like Wins) | info |
 
-The list will be cross-checked against established observer taxonomies before it's final.
+Cross-checked against the categories Yiaga Africa (Watching The Vote) and CDD's Election Analysis Centre used in their 2023 and 2026 statements. Neither publishes a formal taxonomy, so matching their wording makes data easier to share. "Results not uploaded to IReV" is left out: a voter at the polling unit can't see it.
 
 ## How people report
 
@@ -136,26 +145,64 @@ A few moderators per LGA means **thousands of volunteers**, so moderation needs 
 
 ## Polling unit data
 
-_To be completed from the data-source research: where INEC publishes the list, format, completeness, coordinates and licence, and the chosen import path._
+**INEC publishes no bulk file of the current polling units.** What exists (researched 11 Nov 2026, mostly from search summaries; INEC's own site couldn't be fetched from the build environment):
 
-## Timeline (8 weeks to the first polling day)
+| Source | What it has | Caveats |
+| --- | --- | --- |
+| INEC's CVR polling-unit locator (cvr.inecnigeria.org) | The live hierarchy (state, LGA, ward, unit), with an approximate map point per unit | No bulk download or published terms; reached through undocumented endpoints |
+| [kcemenike/find-my-polling-unit](https://github.com/kcemenike/find-my-polling-unit) | JSON scraped from the CVR locator, Oct 2026: 37 states, 774 LGAs, 8,810 wards, 176,846 units, with INEC ids and codes; coordinates for 163,171 units (about 92%); includes the scraper | No licence; ~17,400 units share a point with another; **the README is partisan**, so it's a convenience copy, never cited as a source |
+| [Emeka-Onwuepe/Polling_Units_in_Nigeria](https://github.com/Emeka-Onwuepe/Polling_Units_in_Nigeria) | CSV scraped from IReV, Nov 2023: 176,846 units with codes, plus senatorial district and federal constituency | No coordinates or licence; typos in constituency names; predates the 2026 constituency changes |
+| INEC PDFs | 2015 per-state directories (old 119,973 units); 2021 counts by state | Out of date; counts only |
+| CredibleVoteNG | Reported free API of all units, launched in 2026 | URL, coverage and licence not yet confirmed |
 
-| Week | Work |
+**Import plan:**
+1. Write our own importer for INEC's CVR locator, so INEC is the source of record. Use the Oct 2026 scrape to build and test it, and cross-check counts and codes against the IReV-derived CSV.
+2. Run the importer after the final register (15 Dec 2026), and again in the week before each polling day. Changes are applied as inserts and updates, never deletes, so existing reports keep their unit.
+3. Treat coordinates as approximate. Nulls and shared points are allowed; they're used only for "near your unit?" checks and the ward map, never to place an incident.
+4. Store INEC's codes exactly as INEC formats them, and accept common typed forms (slashes, dashes, missing leading zeros) when people search.
+
+**Licensing is unresolved.** INEC publishes no terms for this data, and neither third-party copy has a licence. We use the data to let people pick their polling unit, and publish only aggregates. Get legal advice before offering the raw list for download.
+
+## Timeline
+
+About 9 weeks to 16 January, with the Christmas and New Year holidays inside them, so the build has to be done by mid-December.
+
+| Week of | Work |
 | --- | --- |
-| 1 | Polling-unit data import; `election` schema; categories; reports |
-| 2 | WhatsApp and web report flows; polling-unit lookup |
-| 3 | Geographic roles, invite links, moderator onboarding and training mode |
-| 4 | Election-day queue, grouping, labels, escalation |
-| 5 | Public live view; partner export |
-| 6 | Load test; Supabase sizing; moderator recruitment in full swing |
-| 7 | Full dry run with moderators and test reports; fixes; freeze |
-| 8 | Polling day 1. The second polling day follows about two weeks later. |
+| 16 Nov | Polling-unit importer and data; `election` schema; categories; reports |
+| 23 Nov | WhatsApp and web report flows; polling-unit lookup |
+| 30 Nov | Geographic roles, invite links, moderator onboarding and training mode |
+| 7 Dec | Election-day queue, grouping, labels, escalation |
+| 14 Dec | Public live view; partner export; re-import after the final register (15 Dec) |
+| 21 Dec – 3 Jan | Holidays: moderator training continues; fixes only |
+| 4 Jan | Load test; Supabase sizing; full dry run with moderators; freeze on 9 Jan |
+| 16 Jan | **Polling day 1** |
+| 6 Feb | **Polling day 2**, with any fixes from day 1 |
 
-Recruiting and training ~2,000 moderators is the long pole and should start in week 1, alongside the build.
+**Recruiting and training ~2,000 moderators is the long pole.** It should start now, alongside the build.
+
+## Build tasks
+
+| # | Task | By |
+| --- | --- | --- |
+| E1 | `election` schema: elections, states, LGAs, wards, polling units (INEC codes), categories, reports, incident grouping; pgTAP tests | 20 Nov |
+| E2 | Polling-unit importer (CVR), cross-check against the IReV-derived list, re-runnable without deletes | 22 Nov |
+| E3 | Polling-unit lookup: by code (tolerant of formats), menus, search by name | 25 Nov |
+| E4 | WhatsApp election flow in the bot state machine; web report flow with photo blur and ballot warning | 29 Nov |
+| E5 | Geographic staff roles, invite links, two-factor onboarding, training mode | 6 Dec |
+| E6 | Election-day queue: severity, grouping, verify/reject, bulk actions, follow-up replies, escalation alerts | 13 Dec |
+| E7 | Labels and corroboration rules; minute-by-minute aggregates by state, LGA and ward | 13 Dec |
+| E8 | Public live view and method box; partner CSV/API export | 18 Dec |
+| E9 | Load test (50 reports/second sustained, WhatsApp bursts); CDN caching; plan sizing | 8 Jan |
+| E10 | Dry run with moderators and scripted test reports; runbook for polling day | 9 Jan |
 
 ## Open items
 
-- The exact polling dates, from INEC's timetable.
-- Final category list, after checking observer taxonomies, and translations (Pidgin first; Hausa, Yoruba, Igbo if time allows).
+- Confirm the polling dates and the Electoral Act 2026 text from INEC's and PLAC's own sites.
+- Legal review under the **Electoral Act 2026** and INEC's 2026 Regulations and Guidelines:
+  - phones and photos at the polling unit (the 2022 guidelines barred phones from the voting cubicle, not from the polling unit)
+  - the distance rules around a polling unit
+  - defamation and publishing allegations
+  - our use of the polling-unit data
+- Translations: Pidgin first; Hausa, Yoruba and Igbo if time allows.
 - The partner list, and what they want in the export.
-- Legal review: Electoral Act rules on phones and photos at polling units, defamation, and publishing allegations.
