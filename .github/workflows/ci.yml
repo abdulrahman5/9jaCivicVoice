@@ -43,7 +43,7 @@ jobs:
       - name: Civic database
         run: |
           supabase start --workdir db/civic -x studio,imgproxy,realtime,edge-runtime,logflare,vector,supavisor,mailpit,postgres-meta
-          supabase db lint --workdir db/civic --level error --schema core,ops,public_read
+          supabase db lint --workdir db/civic --level error --schema core,ops,public_read,election
           supabase test db --workdir db/civic
       - name: Police vault database
         run: |
