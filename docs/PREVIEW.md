@@ -15,8 +15,9 @@ It takes about 20 minutes, all in web dashboards, with three free accounts: **Su
      create schema if not exists core;
      create schema if not exists ops;
      create schema if not exists public_read;
+     create schema if not exists election;
      ```
-   - **Project Settings → Data API** (or **Integrations → Data API → Settings**) → **Exposed schemas**: tick `core`, `ops` and `public_read`, keep `public` and `graphql_public`, then **Save**. Refresh the page if the new schemas aren't listed.
+   - **Project Settings → Data API** (or **Integrations → Data API → Settings**) → **Exposed schemas**: tick `core`, `ops`, `public_read` and `election`, keep `public` and `graphql_public`, then **Save**. Refresh the page if the new schemas aren't listed.
 
    Exposing a schema doesn't grant access: the migrations give the public (anon) key no permissions in `core` or `ops`, so only the server's service-role key can use them.
 3. **Authentication → Sign In / Providers:**
@@ -93,7 +94,7 @@ If the workflow fails at "Create or refresh the demo moderator", the run's summa
 
 | Symptom | Fix |
 | --- | --- |
-| Pages show no issues; logs mention `Invalid schema` or `permission denied for schema core` | Step 1.2: expose `core`, `ops`, `public_read` |
+| Pages show no issues; logs mention `Invalid schema` or `permission denied for schema core` | Step 1.2: expose `core`, `ops`, `public_read`, `election` |
 | Workflow fails at "Create or refresh the demo moderator" with `Invalid schema: ops` | Step 1.2 wasn't done before the run: expose the schemas, then re-run the workflow |
 | Workflow fails at "Apply migrations" with a network or timeout error | Use the **Session pooler** connection string, not the direct one |
 | Workflow fails at "Check configuration" | A secret or variable is missing from the `preview` **environment** (not repo-level) |
