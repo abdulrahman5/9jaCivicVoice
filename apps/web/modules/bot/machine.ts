@@ -23,7 +23,34 @@ export type BotState =
       city: City;
       location: { lat: number; lng: number } | { text: string };
     }
-  | { step: "await_ref"; locale: Locale };
+  | { step: "await_ref"; locale: Locale }
+  // Election reporting (docs/ELECTIONS.md, task E4)
+  | { step: "e_await_unit"; locale: Locale; electionId: string }
+  | { step: "e_confirm_unit"; locale: Locale; electionId: string; unit: BotUnit }
+  | { step: "e_await_category"; locale: Locale; electionId: string; unit: BotUnit }
+  | { step: "e_await_details"; locale: Locale; electionId: string; unit: BotUnit; category: { id: string; label: string } };
+
+export interface BotUnit {
+  code: string;
+  name: string;
+  active: boolean;
+  lga: string;
+  state: string;
+}
+
+/** What the worker knows that the pure machine can't look up itself. */
+export interface BotContext {
+  policeFormUrl: string;
+  /** The election taking reports now, with its categories in menu order; null outside polling. */
+  election: { id: string; name: string; categories: { id: string; label: string }[] } | null;
+  /** E.g. " It opens on Saturday 16 January at 6:00." Shown when no election is open. */
+  nextElectionNote: string;
+  /** The web form, for photos and "find your polling unit". */
+  electionWebUrl: string;
+}
+
+/** Inputs from WhatsApp, plus the worker's answer to a lookup_unit effect. */
+export type MachineInput = BotInput | { kind: "unit_result"; code: string; unit: BotUnit | null };
 
 export type Effect =
   | {
@@ -34,7 +61,10 @@ export type Effect =
       description?: string;
       media?: { mediaType: "image" | "audio"; mediaId: string };
     }
-  | { type: "lookup_status"; ref: string };
+  | { type: "lookup_status"; ref: string }
+  /** The worker looks the code up and steps the machine again with a unit_result input. */
+  | { type: "lookup_unit"; code: string }
+  | { type: "create_election_report"; electionId: string; puCode: string; category: string; description: string };
 
 export interface StepResult {
   state: BotState;
@@ -51,7 +81,7 @@ const CATEGORY_BY_CHOICE: Record<string, Category | "police"> = {
   "6": "police",
 };
 
-const REF_PATTERN = /^(LAG|FCT)-\d{4,}$/i;
+const REF_PATTERN = /^((LAG|FCT)-\d{4,}|EV-[2-9A-HJ-NP-Z]{7})$/i;
 
 /** Rough bounding boxes of the pilot areas. Points outside both are turned away politely. */
 const PILOT_AREAS: Record<City, { minLat: number; maxLat: number; minLng: number; maxLng: number }> = {
@@ -68,29 +98,40 @@ export function cityFromPoint(lat: number, lng: number): City | null {
 
 export const initialState = (locale: Locale = "en"): BotState => ({ step: "idle", locale });
 
-export function step(state: BotState, input: BotInput, policeFormUrl: string): StepResult {
+export function step(state: BotState, input: MachineInput, ctx: BotContext): StepResult {
   const say = (key: MessageKey, vars?: Record<string, string>) => t(state.locale, key, vars);
   const text = input.kind === "text" ? input.text.trim() : input.kind === "button" ? input.id : "";
+  const welcome = (locale: Locale = state.locale) =>
+    t(locale, "bot.welcome") + (ctx.election ? `\n${t(locale, "bot.welcomeElectionLine", { election: ctx.election.name })}` : "");
+  const toMenu = (...replies: string[]): StepResult => ({ state: { step: "menu", locale: state.locale }, replies, effects: [] });
 
   // "menu" or "0" always returns to the main menu.
-  if (/^(menu|0|hi|hello)$/i.test(text) && state.step !== "idle") {
-    return { state: { step: "menu", locale: state.locale }, replies: [say("bot.welcome")], effects: [] };
-  }
+  if (/^(menu|0|hi|hello)$/i.test(text) && state.step !== "idle") return toMenu(welcome());
+
+  // An election step with no election open any more (the window closed mid-conversation).
+  if (state.step.startsWith("e_") && !ctx.election) return toMenu(say("bot.electionClosed", { when: ctx.nextElectionNote }));
 
   switch (state.step) {
     case "idle":
-      return { state: { step: "menu", locale: state.locale }, replies: [say("bot.welcome")], effects: [] };
+      return toMenu(welcome());
 
     case "menu":
       if (text === "1") return next({ step: "await_category", locale: state.locale }, say("bot.askCategory"));
-      if (text === "2") return next({ step: "await_ref", locale: state.locale }, say("bot.askRef"));
+      if (text === "2") return next({ step: "await_ref", locale: state.locale }, say(ctx.election ? "bot.askRefAny" : "bot.askRef"));
       if (text === "3") return next({ step: "choose_language", locale: state.locale }, say("bot.chooseLanguage"));
+      if (text === "4") {
+        if (!ctx.election) return toMenu(say("bot.electionClosed", { when: ctx.nextElectionNote }));
+        return next(
+          { step: "e_await_unit", locale: state.locale, electionId: ctx.election.id },
+          say("bot.electionAskUnit", { url: ctx.electionWebUrl }),
+        );
+      }
       return retry(state, say);
 
     case "choose_language": {
       const locale: Locale | undefined = text === "1" ? "en" : text === "2" ? "pcm" : undefined;
       if (!locale) return retry(state, say);
-      return next({ step: "menu", locale }, t(locale, "bot.languageSet"), t(locale, "bot.welcome"));
+      return next({ step: "menu", locale }, t(locale, "bot.languageSet"), welcome(locale));
     }
 
     case "await_category": {
@@ -98,7 +139,7 @@ export function step(state: BotState, input: BotInput, policeFormUrl: string): S
       if (!choice) return retry(state, say);
       if (choice === "police") {
         // Never take police reports on WhatsApp: it exposes the phone number.
-        return next({ step: "menu", locale: state.locale }, say("bot.policeRedirect", { url: policeFormUrl }));
+        return next({ step: "menu", locale: state.locale }, say("bot.policeRedirect", { url: ctx.policeFormUrl }));
       }
       return next({ step: "await_location", locale: state.locale, category: choice }, say("bot.askLocation"));
     }
@@ -138,23 +179,86 @@ export function step(state: BotState, input: BotInput, policeFormUrl: string): S
     }
 
     case "await_ref":
-      if (!REF_PATTERN.test(text)) return retry(state, say, "bot.askRef");
+      if (!REF_PATTERN.test(text)) return retry(state, say, ctx.election ? "bot.askRefAny" : "bot.askRef");
       return {
         state: { step: "menu", locale: state.locale },
         replies: [],
         effects: [{ type: "lookup_status", ref: text.toUpperCase() }],
       };
+
+    case "e_await_unit": {
+      if (input.kind === "unit_result") {
+        const unit = input.unit;
+        if (!unit) return next(state, say("bot.electionUnitNotFound", { code: input.code, url: ctx.electionWebUrl }));
+        if (!unit.active) return next(state, say("bot.electionUnitInactive", { code: unit.code }));
+        return next(
+          { ...state, step: "e_confirm_unit", unit },
+          say("bot.electionConfirmUnit", { code: unit.code, name: unit.name, lga: unit.lga, state: unit.state }),
+        );
+      }
+      // Codes are four groups of digits (24/01/01/001) or nine digits in a row.
+      if ((text.match(/\d+/g) ?? []).length === 4 || /^\d{9}$/.test(text)) {
+        return { state, replies: [], effects: [{ type: "lookup_unit", code: text }] };
+      }
+      return retry(state, say, "bot.electionAskUnit", { url: ctx.electionWebUrl });
+    }
+
+    case "e_confirm_unit":
+      if (text === "1") {
+        return next({ ...state, step: "e_await_category" }, categoryMenu(say, ctx.election!.categories));
+      }
+      if (text === "2") {
+        return next({ step: "e_await_unit", locale: state.locale, electionId: state.electionId }, say("bot.electionAskUnit", { url: ctx.electionWebUrl }));
+      }
+      return retry(state, say);
+
+    case "e_await_category": {
+      const choice = /^\d{1,2}$/.test(text) ? ctx.election!.categories[Number(text) - 1] : undefined;
+      if (!choice) return retry(state, say, undefined, undefined, categoryMenu(say, ctx.election!.categories));
+      return next({ ...state, step: "e_await_details", category: choice }, say("bot.electionAskDetails", { url: ctx.electionWebUrl }));
+    }
+
+    case "e_await_details": {
+      if (input.kind === "media") return next(state, say("bot.electionPhotoOnWeb", { url: ctx.electionWebUrl }));
+      if (input.kind !== "text" || !text) return retry(state, say, "bot.electionAskDetails", { url: ctx.electionWebUrl });
+      const skipped = /^skip$/i.test(text);
+      if (skipped && state.category.id === "other") return next(state, say("bot.electionNeedsDetails"));
+      return {
+        state: { step: "menu", locale: state.locale },
+        replies: [],
+        // The worker replies with the reference, or why it couldn't be saved.
+        effects: [
+          {
+            type: "create_election_report",
+            electionId: state.electionId,
+            puCode: state.unit.code,
+            category: state.category.id,
+            description: skipped ? "" : text,
+          },
+        ],
+      };
+    }
   }
+}
+
+function categoryMenu(say: (k: MessageKey, v?: Record<string, string>) => string, categories: { label: string }[]) {
+  return say("bot.electionAskCategory", { options: categories.map((c, i) => `${i + 1} · ${c.label}`).join("\n") });
 }
 
 function next(state: BotState, ...replies: string[]): StepResult {
   return { state, replies, effects: [] };
 }
 
-function retry(state: BotState, say: (k: MessageKey) => string, reprompt?: MessageKey): StepResult {
+function retry(
+  state: BotState,
+  say: (k: MessageKey, v?: Record<string, string>) => string,
+  reprompt?: MessageKey,
+  vars?: Record<string, string>,
+  text?: string,
+): StepResult {
   return {
     state,
-    replies: reprompt ? [say(reprompt)] : [say("bot.didNotUnderstand")],
+    replies: [text ?? (reprompt ? say(reprompt, vars) : say("bot.didNotUnderstand"))],
     effects: [],
   };
 }

@@ -13,4 +13,8 @@ export const pcm: Partial<Record<keyof typeof en, string>> = {
     "Welcome to CivicVoice. Reply with number:\n1 · Report wahala\n2 · Check your report\n3 · Change language",
   "bot.askDetails": "Tell us wetin happen. Send picture, voice note, or type am.",
   "bot.received": "Thank you. Your report number na {ref}.\nWe go message you here when e move. Reply 2 anytime to check am.",
+  "bot.welcomeElectionLine": "4 · Report wetin dey happen for your polling unit ({election})",
+  "bot.electionAskUnit":
+    "Wetin be your polling unit code? E dey your voter card (PVC), like 24/01/01/001.\nYou no know am? Find am for {url}",
+  "bot.electionAskCategory": "Wetin happen? Reply with number:\n{options}",
 };

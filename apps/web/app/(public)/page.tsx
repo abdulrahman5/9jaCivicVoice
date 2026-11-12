@@ -85,6 +85,12 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <Link href="/police" className="text-[13px] font-semibold">
             See police conduct patterns
           </Link>
+          <Link href="/elections/report" className="text-[13px] font-semibold">
+            Election day: report from your polling unit
+          </Link>
+          <Link href="/elections/find" className="text-[13px] font-semibold">
+            Find your polling unit
+          </Link>
         </section>
 
         <section className="flex flex-col gap-3">

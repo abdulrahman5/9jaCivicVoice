@@ -73,6 +73,8 @@ Cross-checked against the categories Yiaga Africa (Watching The Vote) and CDD's 
 
 Short replies throughout, because election day means weak data and long queues.
 
+**Photos only on the web.** WhatsApp takes text reports. Photos sent on WhatsApp would reach our server unblurred, and faces must be blurred on the phone, so the bot points people to the web form for photos.
+
 **Web.** The same steps on the mobile site, plus "find my polling unit" search by name, and an optional location check that only says whether you're near the unit you picked.
 
 **Limits against flooding:**
