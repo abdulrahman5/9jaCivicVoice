@@ -81,3 +81,29 @@ export const CACHE_SECONDS: Record<LookupQuery["mode"], number> = {
   // A location is personal: answers to it are never cached by the CDN.
   near: 0,
 };
+
+/** A web election report (POST /api/election/reports). Photos travel separately, as files. */
+export const ElectionReportInput = z
+  .object({
+    electionId: z.string().regex(/^[a-z0-9-]{3,60}$/),
+    puCode: z.string().trim().min(4).max(30),
+    category: z.string().regex(/^[a-z_]{3,40}$/, "Choose what happened from the list."),
+    description: z.string().trim().max(1000).default(""),
+    /** Random id kept in the browser, so one person can't report the same thing twice. Never stored as is. */
+    deviceId: z.uuid(),
+    /** Required when photos are attached: no ballots, faces and plates blurred. */
+    photosConfirmed: z.boolean().default(false),
+  })
+  .strict()
+  .refine((v) => v.category !== "other" || v.description.length >= 5, {
+    message: "Describe what happened.",
+    path: ["description"],
+  });
+export type ElectionReportInput = z.infer<typeof ElectionReportInput>;
+
+/** Election report references: EV- and seven letters or digits, without look-alikes. */
+export const ElectionRef = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^EV-[2-9A-HJ-NP-Z]{7}$/, "Enter a reference like EV-7KQ2M9X.");

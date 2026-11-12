@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BotState } from "../bot/machine";
 import type { InboundMessage } from "../whatsapp/payload";
 import { MAX_ATTEMPTS, runQueue, type Job, type QueueStore } from "./runner";
-import { handleWaInbound, type Session, type WaDeps } from "./wa-inbound";
+import { ReporterFacingError, handleWaInbound, type Session, type WaDeps } from "./wa-inbound";
 
 function fakeStore(jobs: Job[]) {
   const store = {
@@ -50,6 +50,19 @@ describe("handleWaInbound", () => {
       lookupStatus: vi.fn(async () => ({ status: "acknowledged", note: "Crew on Monday" })),
       send: vi.fn(async () => {}),
       policeFormUrl: "https://safe.example",
+      electionContext: vi.fn(async () => ({
+        election: { id: "2027-presidential-nass", name: "Presidential and National Assembly elections", categories: [{ id: "vote_buying", label: "Vote buying" }] },
+        nextElectionNote: "",
+        electionWebUrl: "https://civicvoice.example/elections/report",
+      })),
+      // Normalises like election.normalize_pu_code: each group of digits, zero-padded.
+      findUnit: vi.fn(async (code: string) =>
+        (code.match(/\d+/g) ?? []).map((g, i) => g.padStart(i === 3 ? 3 : 2, "0")).join("/") === "24/01/01/001"
+          ? { code: "24/01/01/001", name: "ST. JOSEPH SECONDARY SCHOOL", active: true, lga: "AGEGE", state: "Lagos" }
+          : null,
+      ),
+      createElectionReport: vi.fn(async (): Promise<{ ref: string; label: string }> => ({ ref: "EV-7KQ2M9X", label: "reported" })),
+      electionStatus: vi.fn(async () => ({ category: "Vote buying", unit: "ST. JOSEPH SECONDARY SCHOOL (24/01/01/001)", label: "corroborated" })),
     } satisfies WaDeps;
     return { d, sessions };
   }
@@ -89,5 +102,50 @@ describe("handleWaInbound", () => {
     await handleWaInbound(msg({ text: { body: "LAG-1000" } }), d);
     expect(d.lookupStatus).toHaveBeenCalledWith("LAG-1000", "hash");
     expect(d.send).toHaveBeenCalledWith("2348031234567", expect.stringContaining("Crew on Monday"));
+  });
+
+  it("looks up a polling unit within the same message and confirms it", async () => {
+    const { d, sessions } = deps({ step: "e_await_unit", locale: "en", electionId: "2027-presidential-nass" });
+    await handleWaInbound(msg({ text: { body: "24 1 1 1" } }), d);
+    expect(d.findUnit).toHaveBeenCalledWith("24 1 1 1");
+    expect(sessions.get("hash")!.state.step).toBe("e_confirm_unit");
+    expect(d.send).toHaveBeenCalledWith("2348031234567", expect.stringContaining("ST. JOSEPH SECONDARY SCHOOL"));
+  });
+
+  it("saves an election report with the sender's hash and replies with the reference", async () => {
+    const unit = { code: "24/01/01/001", name: "ST. JOSEPH SECONDARY SCHOOL", active: true, lga: "AGEGE", state: "Lagos" };
+    const { d } = deps({
+      step: "e_await_details",
+      locale: "en",
+      electionId: "2027-presidential-nass",
+      unit,
+      category: { id: "vote_buying", label: "Vote buying" },
+    });
+    await handleWaInbound(msg({ text: { body: "Cash near the queue" } }), d);
+    expect(d.createElectionReport).toHaveBeenCalledWith({
+      electionId: "2027-presidential-nass",
+      puCode: "24/01/01/001",
+      category: "vote_buying",
+      description: "Cash near the queue",
+      phone: "+2348031234567",
+      contactHash: "hash",
+    });
+    expect(d.send).toHaveBeenCalledWith("2348031234567", expect.stringContaining("EV-7KQ2M9X"));
+  });
+
+  it("passes on a refusal the reporter can act on, instead of failing the job", async () => {
+    const unit = { code: "24/01/01/001", name: "X", active: true, lga: "AGEGE", state: "Lagos" };
+    const { d } = deps({ step: "e_await_details", locale: "en", electionId: "e", unit, category: { id: "vote_buying", label: "Vote buying" } });
+    d.createElectionReport.mockRejectedValueOnce(new ReporterFacingError("You've already reported this at this polling unit. Thank you."));
+    await handleWaInbound(msg({ text: { body: "skip" } }), d);
+    expect(d.send).toHaveBeenCalledWith("2348031234567", expect.stringContaining("already reported"));
+  });
+
+  it("checks an election report by its reference", async () => {
+    const { d } = deps({ step: "await_ref", locale: "en" });
+    await handleWaInbound(msg({ text: { body: "EV-7KQ2M9X" } }), d);
+    expect(d.electionStatus).toHaveBeenCalledWith("EV-7KQ2M9X");
+    expect(d.lookupStatus).not.toHaveBeenCalled();
+    expect(d.send).toHaveBeenCalledWith("2348031234567", expect.stringContaining("Others at this polling unit reported the same thing"));
   });
 });

@@ -99,3 +99,5 @@ function blurRegion(ctx: OffscreenCanvasRenderingContext2D, canvas: OffscreenCan
   ctx.drawImage(small, 0, 0, small.width, small.height, r.x, r.y, r.width, r.height);
   ctx.restore();
 }
+
+export { MAX_PHOTO_BYTES, stripJpegMetadata } from "./jpeg";

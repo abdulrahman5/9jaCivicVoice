@@ -1,13 +1,23 @@
 import "server-only";
 import { civicServiceClient } from "@civicvoice/db";
-import { hashContact } from "../contact-hash";
-import { env } from "../env";
+import { encryptContact } from "../contact-crypto";
+import { hashContact, normalisePhone } from "../contact-hash";
+import { lookup } from "../election/lookup";
+import {
+  ElectionReportError,
+  currentElection,
+  electionCategories,
+  electionReportStatus,
+  nextElection,
+  submitElectionReport,
+} from "../election/report";
+import { env, siteUrl } from "../env";
 import { submitReport } from "../issues/submit";
 import { enqueue, type QueueName } from "../queue";
 import { sendText } from "../whatsapp/client";
 import type { InboundMessage } from "../whatsapp/payload";
 import type { Handler, Job, QueueStore } from "./runner";
-import { handleWaInbound, type Session, type WaDeps } from "./wa-inbound";
+import { ReporterFacingError, handleWaInbound, type Session, type WaDeps } from "./wa-inbound";
 
 /** Production wiring: real database, queues and WhatsApp behind the injectable interfaces. */
 
@@ -29,6 +39,31 @@ export const queueStore: QueueStore = {
     if (error) throw error;
   },
 };
+
+/** The election context changes at most a few times a day; one read a minute is plenty for the bot. */
+let electionCache: { at: number; value: Awaited<ReturnType<WaDeps["electionContext"]>> } | undefined;
+
+async function electionContext(): ReturnType<WaDeps["electionContext"]> {
+  if (electionCache && Date.now() - electionCache.at < 60_000) return electionCache.value;
+  const [election, upcoming, categories] = await Promise.all([currentElection(), nextElection(), electionCategories()]);
+  const opens = upcoming
+    ? new Date(upcoming.opens_at).toLocaleString("en-NG", {
+        timeZone: "Africa/Lagos",
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+  const value = {
+    election: election ? { id: election.id, name: election.name, categories: categories.map(({ id, label }) => ({ id, label })) } : null,
+    nextElectionNote: opens ? ` It opens on ${opens}.` : "",
+    electionWebUrl: `${siteUrl()}/elections/report`,
+  };
+  electionCache = { at: Date.now(), value };
+  return value;
+}
 
 function waDeps(): WaDeps {
   const pepper = env("secrets").CONTACT_HASH_PEPPER;
@@ -81,6 +116,36 @@ function waDeps(): WaDeps {
     },
     send: sendText,
     policeFormUrl: env("police").NEXT_PUBLIC_POLICE_FORM_URL,
+    electionContext,
+    async findUnit(code) {
+      const result = await lookup({ mode: "code", code });
+      const unit = "unit" in result ? result.unit : null;
+      return unit ? { code: unit.code, name: unit.name, active: unit.active, lga: unit.lga.name, state: unit.state.name } : null;
+    },
+    async createElectionReport(input) {
+      try {
+        return await submitElectionReport({
+          electionId: input.electionId,
+          puCode: input.puCode,
+          category: input.category,
+          description: input.description,
+          mediaKeys: [],
+          channel: "whatsapp",
+          // The same hash as the bot session, so limits and duplicates follow the person.
+          senderHash: input.contactHash,
+          contactHash: input.contactHash,
+          // Kept (encrypted) for moderators' follow-up questions, as with civic reports.
+          contactEnc: encryptContact(normalisePhone(input.phone), env("secrets").CONTACT_ENC_KEY),
+        });
+      } catch (e) {
+        if (e instanceof ElectionReportError) throw new ReporterFacingError(e.message);
+        throw e;
+      }
+    },
+    async electionStatus(ref) {
+      const s = await electionReportStatus(ref);
+      return s ? { category: s.category_label, unit: `${s.pu_name} (${s.pu_code})`, label: s.label } : null;
+    },
   };
 }
 
