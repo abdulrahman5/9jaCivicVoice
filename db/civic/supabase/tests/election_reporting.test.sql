@@ -10,14 +10,12 @@ select plan(9);
 select is((select count(*)::int from election.current_election()), 0, 'no election is open before polling day');
 select is((select id from election.next_election()), '2027-presidential-nass', 'the next one is the presidential and NASS poll');
 
-insert into election.elections (id, name, polls_on, opens_at, closes_at, is_training)
-values ('practice', 'Practice', current_date, now() - interval '1 hour', now() + interval '1 day', true);
+-- The practice election (task E5) is open all season.
 select is((select count(*)::int from election.current_election()), 0, 'a practice election is not a real one');
 select is((select id from election.current_election(true)), 'practice', 'but can be asked for, for training');
 
 -- Status by reference ------------------------------------------------------------------------
 
-insert into election.election_states (election_id, state_code) values ('practice', 24);
 insert into election.lgas (state_code, code, name) values (24, 90, 'TEST LGA');
 insert into election.wards (state_code, lga_code, code, name) values (24, 90, 1, 'TEST WARD');
 insert into election.polling_units (state_code, lga_code, ward_code, unit_no, name) values (24, 90, 1, 1, 'TEST SCHOOL');

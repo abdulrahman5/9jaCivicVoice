@@ -130,6 +130,15 @@ A few moderators per LGA means **thousands of volunteers**, so moderation needs 
 
 **Practice:** a training mode with fake reports, so moderators practise before the day.
 
+**How it works (built in E5):**
+- **The first coordinators.** Civic admins count as national admins. An admin opens *Election team* in the ops console and creates a state coordinator's link; no script needed.
+- **Invite links.** Each link is for one person and one area, works once and lasts 7 days. Only a hash of it is stored, and the link is shown once, to whoever made it. Coordinators can cancel open links. An invite stops working if the person who made it is deactivated.
+- **Joining.** The volunteer opens the link (`/login/join/…`), sees who invited them and for which area, and creates an account. They then set up an authenticator app like all staff, and land in the election console. Volunteers can't see the civic or police queues.
+- **The training check.** Seven questions on ballots, safety, labels, neutrality and reporters' privacy, all of which must be right. Wrong answers say why. Until a moderator passes, they only see practice reports; the database enforces this too.
+- **Practice.** A practice election (`practice`) is open all season and is never public or counted. *Add practice reports* creates a dozen fake reports at polling units in the moderator's own area, some of them corroborated. *Clear* removes them.
+- **Deactivating.** It takes effect at the moderator's next click, because every staff page checks it. Everything above is recorded in the audit log.
+- **One area per person.** Someone who moderates two LGAs needs two invites and two email addresses, or a state coordinator role.
+
 ## Partners
 
 - A CSV export and a read-only API of verified, anonymised incidents (no contact details, no photos with faces).
