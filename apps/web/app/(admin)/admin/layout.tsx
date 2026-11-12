@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { currentStaff } from "@/modules/auth";
+import { CIVIC_ROLES, currentStaff } from "@/modules/auth";
+import { currentElectionStaff } from "@/modules/election/staff";
 import { signOut } from "../login/actions";
 
 export const metadata: Metadata = { title: "Ops console", robots: { index: false, follow: false } };
@@ -11,6 +12,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const staff = await currentStaff();
   if (!staff) redirect("/login");
+  const electionStaff = await currentElectionStaff();
+  const link = "rounded-lg px-2 py-2 text-ink no-underline hover:bg-fill";
 
   return (
     <div className="flex min-h-dvh flex-wrap">
@@ -20,18 +23,30 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="font-mono text-[11px] text-muted">OPS CONSOLE</div>
         </div>
         <nav aria-label="Console" className="flex flex-col gap-1 text-sm">
-          <Link href="/admin" className="rounded-lg px-2 py-2 text-ink no-underline hover:bg-fill">
-            Moderation queue
-          </Link>
+          {CIVIC_ROLES.includes(staff.role) && (
+            <Link href="/admin" className={link}>
+              Moderation queue
+            </Link>
+          )}
           {staff.role === "police_moderator" && (
-            <Link href="/admin/police" className="rounded-lg px-2 py-2 text-ink no-underline hover:bg-fill">
+            <Link href="/admin/police" className={link}>
               Police reports
+            </Link>
+          )}
+          {electionStaff && (
+            <Link href="/admin/election" className={link}>
+              Election
+            </Link>
+          )}
+          {electionStaff && electionStaff.electionRole !== "lga_moderator" && (
+            <Link href="/admin/election/team" className={link}>
+              Election team
             </Link>
           )}
         </nav>
         <div className="mt-auto flex flex-col gap-2 text-xs text-muted">
           <span>
-            {staff.displayName} · {staff.role.replace("_", " ")}
+            {staff.displayName} · {electionStaff && staff.role === "election_moderator" ? electionStaff.areaName : staff.role.replace("_", " ")}
           </span>
           <form action={signOut}>
             <button type="submit" className="text-sm font-semibold text-accent">

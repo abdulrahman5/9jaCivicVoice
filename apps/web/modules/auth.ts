@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { civicServiceClient } from "@civicvoice/db";
 import { isConfigured } from "./env";
 
-export type StaffRole = "admin" | "moderator" | "police_moderator";
+export type StaffRole = "admin" | "moderator" | "police_moderator" | "election_moderator";
+
+/** Roles that reach the civic console. Election volunteers only reach /admin/election. */
+export const CIVIC_ROLES: StaffRole[] = ["admin", "moderator", "police_moderator"];
 
 export interface Staff {
   userId: string;
@@ -61,10 +64,16 @@ export async function currentStaff(): Promise<Staff | null> {
   return { userId: user.id, email: user.email, ...profile };
 }
 
-/** For server actions and admin pages: the staff member, or a redirect to sign-in. */
-export async function requireStaff(roles?: StaffRole[]): Promise<Staff> {
+/**
+ * For server actions and admin pages: the staff member, or a redirect to sign-in.
+ * Without roles, any civic role passes; election volunteers never do.
+ */
+export async function requireStaff(roles: StaffRole[] = CIVIC_ROLES): Promise<Staff> {
   const staff = await currentStaff();
   if (!staff) redirect("/login");
-  if (roles && !roles.includes(staff.role)) throw new Error("You don't have permission to do that.");
+  if (!roles.includes(staff.role)) {
+    if (staff.role === "election_moderator") redirect("/admin/election");
+    throw new Error("You don't have permission to do that.");
+  }
   return staff;
 }

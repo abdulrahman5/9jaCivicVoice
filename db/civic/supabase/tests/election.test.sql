@@ -44,16 +44,16 @@ values (24, 90, 1, 3, 'Test School I'), (37, 91, 1, 2, 'Test Market');
 select is((select code from election.polling_units where name = 'Test School I'), '24/90/01/003', 'units carry INEC''s code');
 
 insert into election.elections (id, name, polls_on, opens_at, closes_at, is_training)
-values ('practice', 'Practice', current_date, now() - interval '1 hour', now() + interval '1 day', true),
+values ('practice-open', 'Practice', current_date, now() - interval '1 hour', now() + interval '1 day', true),
        ('practice-states-only', 'Practice (no FCT)', current_date, now() - interval '1 hour', now() + interval '1 day', true),
        ('practice-closed', 'Practice closed', current_date, now() - interval '2 days', now() - interval '1 day', true);
 insert into election.election_states (election_id, state_code)
-select 'practice', code from election.states;
+select 'practice-open', code from election.states;
 insert into election.election_states (election_id, state_code)
 select 'practice-states-only', code from election.states where code <> 37;
 insert into election.election_states (election_id, state_code) values ('practice-closed', 24);
 
-create function pg_temp.report(p_code text, p_category text, p_sender text, p_election text default 'practice')
+create function pg_temp.report(p_code text, p_category text, p_sender text, p_election text default 'practice-open')
 returns table (ref_code text, label text) language sql as $$
   select * from election.submit_report(p_election, p_code, p_category, '', '{}', 'web', p_sender);
 $$;
